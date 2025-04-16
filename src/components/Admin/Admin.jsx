@@ -13,7 +13,25 @@ const Admin = () => {
     email: "",
     username: "",
     password: "",
+    role: "employee", // Default role
+    department: "IT", // Default department
   });
+
+  // Available roles for employees
+  const employeeRoles = [
+    { id: "employee", label: "Employee" },
+    { id: "manager", label: "Manager" },
+    { id: "chef", label: "Chef de service" },
+  ];
+
+  // Available departments
+  const departments = [
+    { id: "IT", label: "IT" },
+    { id: "TLS", label: "TLS" },
+    { id: "HR", label: "Human Resources" },
+    { id: "Finance", label: "Finance" },
+    { id: "Marketing", label: "Marketing" },
+  ];
 
   // States for attendance type management
   const [attendanceTypes, setAttendanceTypes] = useState([]);
@@ -78,16 +96,26 @@ const Admin = () => {
     }
   };
 
-  // Add a new employee
   const addEmployee = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(
-        "http://localhost:8092/api/employee",
-        newEmployee,
-      );
+      let endpoint = "http://localhost:8092/api/employee";
+      if (newEmployee.role === "chef") {
+        endpoint = "http://localhost:8092/api/chef-service";
+      } else if (newEmployee.role === "manager") {
+        endpoint = "http://localhost:8092/api/manager";
+      }
+
+      const response = await axios.post(endpoint, newEmployee);
       setEmployees([...employees, response.data]);
-      setNewEmployee({ name: "", email: "", username: "", password: "" });
+      setNewEmployee({
+        name: "",
+        email: "",
+        username: "",
+        password: "",
+        role: "employee",
+        department: "IT",
+      });
       alert("Employee added successfully!");
     } catch (error) {
       console.error("Error adding employee:", error);
@@ -324,6 +352,44 @@ const Admin = () => {
                       required
                     />
                   </div>
+                  <div className="mb-4">
+                    <label className="block text-gray-700">Rôle</label>
+                    <select
+                      value={newEmployee.role}
+                      onChange={(e) =>
+                        setNewEmployee({
+                          ...newEmployee,
+                          role: e.target.value,
+                        })
+                      }
+                      className="mt-1 block w-full border border-gray-300 rounded p-2"
+                      required>
+                      {employeeRoles.map((role) => (
+                        <option key={role.id} value={role.id}>
+                          {role.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-gray-700">Département</label>
+                    <select
+                      value={newEmployee.department}
+                      onChange={(e) =>
+                        setNewEmployee({
+                          ...newEmployee,
+                          department: e.target.value,
+                        })
+                      }
+                      className="mt-1 block w-full border border-gray-300 rounded p-2"
+                      required>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <button
                     type="submit"
                     className="bg-[#123458] text-white px-4 py-2 rounded hover:bg-[#02aafd] transition-colors">
@@ -354,6 +420,12 @@ const Admin = () => {
                             Email
                           </th>
                           <th className="border border-gray-300 px-4 py-2">
+                            Rôle
+                          </th>
+                          <th className="border border-gray-300 px-4 py-2">
+                            Département
+                          </th>
+                          <th className="border border-gray-300 px-4 py-2">
                             Actions
                           </th>
                         </tr>
@@ -369,6 +441,16 @@ const Admin = () => {
                             </td>
                             <td className="border border-gray-300 px-4 py-2">
                               {employee.email}
+                            </td>
+                            <td className="border border-gray-300 px-4 py-2">
+                              {employee.role === "manager"
+                                ? "Manager"
+                                : employee.role === "chef"
+                                ? "Chef de service"
+                                : "Employé"}
+                            </td>
+                            <td className="border border-gray-300 px-4 py-2">
+                              {employee.department}
                             </td>
                             <td className="border border-gray-300 px-4 py-2">
                               <button

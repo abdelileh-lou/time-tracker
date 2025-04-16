@@ -44,6 +44,7 @@
 
 // auth.js
 export const setAuthData = (token, role, userData) => {
+  console.log("Saving token:", token); // DEBUG
   localStorage.setItem("token", token);
   localStorage.setItem("role", role);
   localStorage.setItem("userData", JSON.stringify(userData)); // Store complete user data

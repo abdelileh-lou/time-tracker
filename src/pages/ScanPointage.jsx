@@ -63,10 +63,12 @@ const ScanPointage = () => {
 
       const response = await axios.post(
         `http://localhost:8092/api/attendance/record`,
+        null,
         {
-          employeeId: employee.id,
-          attendanceTypeId: typeId,
-          timestamp: new Date().toISOString(),
+          params: {
+            employeeId: employee.id,
+            attendanceTypeId: typeId,
+          },
         },
       );
 

@@ -32,7 +32,7 @@ const Login = () => {
         },
       );
 
-      console.log("Login response:", response.data);
+      console.log("Login response:", response);
 
       // 2. Handle different response statuses
       if (response.status === 200) {
@@ -46,6 +46,7 @@ const Login = () => {
           );
         }
 
+        console.log("Data: ", token, role, user);
         // Store authentication data
         setAuthData(token, role, user || { username, role });
 
