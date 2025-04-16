@@ -19,12 +19,23 @@ const ChefServiceDashboard = () => {
   });
   const [error, setError] = useState(null);
 
-  // State for new planning entry
+  // Enhanced state for new planning entry
   const [newPlanningEntry, setNewPlanningEntry] = useState({
     employeeId: "",
-    date: "",
-    startTime: "",
-    endTime: "",
+    weekStartDate: "",
+    totalHoursPerWeek: 40,
+    workDays: {
+      monday: true,
+      tuesday: true,
+      wednesday: true,
+      thursday: true,
+      friday: true,
+      saturday: false,
+      sunday: false,
+    },
+    dailyHours: 8,
+    startTime: "08:00",
+    endTime: "17:00",
     description: "",
   });
 
@@ -95,7 +106,7 @@ const ChefServiceDashboard = () => {
         const token = localStorage.getItem("token");
 
         const response = await axios.get(
-          `http://localhost:8092/api/employees/not-managers-or-chefs`,
+          `http://localhost:8092/api/AllEmployees`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -181,34 +192,164 @@ const ChefServiceDashboard = () => {
     }
   }, [serviceInfo.department, activeView]);
 
-  // Handle changes to the new planning entry form
-  const handlePlanningInputChange = (e) => {
-    const { name, value } = e.target;
+  // Handle changes to work days checkboxes
+  const handleWorkDayChange = (day) => {
     setNewPlanningEntry({
       ...newPlanningEntry,
-      [name]: value,
+      workDays: {
+        ...newPlanningEntry.workDays,
+        [day]: !newPlanningEntry.workDays[day],
+      },
     });
   };
 
+  // Handle changes to the new planning entry form
+  const handlePlanningInputChange = (e) => {
+    const { name, value } = e.target;
+
+    // Special handling for numeric fields
+    if (name === "totalHoursPerWeek" || name === "dailyHours") {
+      setNewPlanningEntry({
+        ...newPlanningEntry,
+        [name]: parseInt(value) || 0,
+      });
+    } else {
+      setNewPlanningEntry({
+        ...newPlanningEntry,
+        [name]: value,
+      });
+    }
+  };
+
+  // Generate individual day entries from the weekly schedule
+  const generateDailyEntries = () => {
+    const entries = [];
+    const startDate = new Date(newPlanningEntry.weekStartDate);
+    const workDays = Object.entries(newPlanningEntry.workDays)
+      .filter(([_, isWorking]) => isWorking)
+      .map(([day]) => day);
+
+    const dayMapping = {
+      sunday: 0,
+      monday: 1,
+      tuesday: 2,
+      wednesday: 3,
+      thursday: 4,
+      friday: 5,
+      saturday: 6,
+    };
+
+    // Create an entry for each selected day of the week
+    for (let i = 0; i < 7; i++) {
+      const currentDate = new Date(startDate);
+      currentDate.setDate(startDate.getDate() + i);
+
+      const dayName = Object.keys(dayMapping).find(
+        (key) => dayMapping[key] === currentDate.getDay(),
+      );
+
+      if (workDays.includes(dayName)) {
+        entries.push({
+          employeeId: newPlanningEntry.employeeId,
+          date: currentDate.toISOString().split("T")[0],
+          startTime: newPlanningEntry.startTime,
+          endTime: newPlanningEntry.endTime,
+          description: newPlanningEntry.description,
+          department: serviceInfo.department,
+          hours: newPlanningEntry.dailyHours,
+        });
+      }
+    }
+
+    return entries;
+  };
+
   // Create a new planning entry
+  // const createPlanningEntry = async (e) => {
+  //   e.preventDefault();
+  //   try {
+  //     setError(null);
+  //     setLoading((prev) => ({ ...prev, planning: true }));
+  //     const token = localStorage.getItem("token");
+
+  //     // Generate daily entries from weekly schedule
+  //     const dailyEntries = generateDailyEntries();
+
+  //     // Create all daily entries
+  //     for (const entry of dailyEntries) {
+  //       await axios.post(`http://localhost:8092/api/planning`, entry, {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       });
+  //     }
+
+  //     // Refresh planning data
+  //     const response = await axios.get(
+  //       `http://localhost:8092/api/planning/department/${serviceInfo.department}`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       },
+  //     );
+
+  //     setPlanning(response.data || []);
+
+  //     // Reset form
+  //     setNewPlanningEntry({
+  //       employeeId: "",
+  //       weekStartDate: "",
+  //       totalHoursPerWeek: 40,
+  //       workDays: {
+  //         monday: true,
+  //         tuesday: true,
+  //         wednesday: true,
+  //         thursday: true,
+  //         friday: true,
+  //         saturday: false,
+  //         sunday: false,
+  //       },
+  //       dailyHours: 8,
+  //       startTime: "08:00",
+  //       endTime: "17:00",
+  //       description: "",
+  //     });
+  //   } catch (err) {
+  //     console.error("Error creating planning:", err);
+  //     setError("Failed to create planning");
+  //   } finally {
+  //     setLoading((prev) => ({ ...prev, planning: false }));
+  //   }
+  // };
+  // In your createPlanningEntry function, modify it like this:
   const createPlanningEntry = async (e) => {
     e.preventDefault();
     try {
       setError(null);
-      const token = localStorage.getItem("token");
+      setLoading((prev) => ({ ...prev, planning: true }));
 
-      await axios.post(
-        `http://localhost:8092/api/planning`,
-        {
-          ...newPlanningEntry,
-          department: serviceInfo.department,
-        },
-        {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      // Generate daily entries from weekly schedule
+      const dailyEntries = generateDailyEntries();
+
+      console.log("Creating planning entries:", dailyEntries); // Debug log
+
+      // Create all daily entries
+      const creationPromises = dailyEntries.map((entry) =>
+        axios.post(`http://localhost:8092/api/planning`, entry, {
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
-        },
+        }),
       );
+
+      await Promise.all(creationPromises);
 
       // Refresh planning data
       const response = await axios.get(
@@ -221,16 +362,55 @@ const ChefServiceDashboard = () => {
       );
 
       setPlanning(response.data || []);
+
+      // Reset form
       setNewPlanningEntry({
         employeeId: "",
-        date: "",
-        startTime: "",
-        endTime: "",
+        weekStartDate: "",
+        totalHoursPerWeek: 40,
+        workDays: {
+          monday: true,
+          tuesday: true,
+          wednesday: true,
+          thursday: true,
+          friday: true,
+          saturday: false,
+          sunday: false,
+        },
+        dailyHours: 8,
+        startTime: "08:00",
+        endTime: "17:00",
         description: "",
       });
     } catch (err) {
       console.error("Error creating planning:", err);
-      setError("Failed to create planning");
+
+      // More specific error handling
+      if (err.response) {
+        // The request was made and the server responded with a status code
+        console.error("Server response:", err.response.data);
+        setError(
+          `Server error: ${err.response.status} - ${
+            err.response.data.message || "No details"
+          }`,
+        );
+      } else if (err.request) {
+        // The request was made but no response was received
+        console.error("No response received:", err.request);
+        setError("No response from server. Please try again.");
+      } else {
+        // Something happened in setting up the request
+        console.error("Request setup error:", err.message);
+        setError(`Failed to create planning: ${err.message}`);
+      }
+
+      // Don't redirect here - let the user see the error and try again
+      // localStorage.removeItem("token");
+      // localStorage.removeItem("userId");
+      // localStorage.removeItem("userRole");
+      // navigate("/login");
+    } finally {
+      setLoading((prev) => ({ ...prev, planning: false }));
     }
   };
 
@@ -252,6 +432,39 @@ const ChefServiceDashboard = () => {
       setError("Failed to delete planning");
     }
   };
+
+  // Calculate end time based on start time and daily hours
+  useEffect(() => {
+    if (newPlanningEntry.startTime && newPlanningEntry.dailyHours) {
+      try {
+        const [hours, minutes] = newPlanningEntry.startTime
+          .split(":")
+          .map(Number);
+        let endHours = hours + Math.floor(newPlanningEntry.dailyHours);
+        let endMinutes =
+          minutes + Math.floor((newPlanningEntry.dailyHours % 1) * 60);
+
+        if (endMinutes >= 60) {
+          endHours += Math.floor(endMinutes / 60);
+          endMinutes = endMinutes % 60;
+        }
+
+        if (endHours >= 24) {
+          endHours = endHours % 24;
+        }
+
+        const formattedEndHours = endHours.toString().padStart(2, "0");
+        const formattedEndMinutes = endMinutes.toString().padStart(2, "0");
+
+        setNewPlanningEntry((prev) => ({
+          ...prev,
+          endTime: `${formattedEndHours}:${formattedEndMinutes}`,
+        }));
+      } catch (e) {
+        console.error("Error calculating end time:", e);
+      }
+    }
+  }, [newPlanningEntry.startTime, newPlanningEntry.dailyHours]);
 
   // Generate attendance report
   const generateNewReport = async () => {
@@ -277,6 +490,11 @@ const ChefServiceDashboard = () => {
       console.error("Error generating report:", err);
       setError("Failed to generate report");
     }
+  };
+
+  // Calculate total selected days
+  const getTotalSelectedDays = () => {
+    return Object.values(newPlanningEntry.workDays).filter(Boolean).length;
   };
 
   // Format date
@@ -381,7 +599,7 @@ const ChefServiceDashboard = () => {
               {/* Create Planning Form */}
               <div className="bg-white rounded shadow-md p-6 mb-6">
                 <h3 className="text-xl font-semibold mb-4">
-                  Créer un nouveau planning
+                  Créer un planning hebdomadaire
                 </h3>
                 <form onSubmit={createPlanningEntry}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -404,17 +622,37 @@ const ChefServiceDashboard = () => {
                         ))}
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-gray-700 mb-2">Date</label>
+
+                    {/* <div>
+                      <label className="block text-gray-700 mb-2">
+                        Date de début de semaine
+                      </label>
                       <input
                         type="date"
-                        name="date"
-                        value={newPlanningEntry.date}
+                        name="weekStartDate"
+                        value={newPlanningEntry.weekStartDate}
+                        onChange={handlePlanningInputChange}
+                        className="w-full p-2 border border-gray-300 rounded"
+                        required
+                      />
+                    </div> */}
+
+                    <div>
+                      <label className="block text-gray-700 mb-2">
+                        Heures par jour
+                      </label>
+                      <input
+                        type="number"
+                        name="dailyHours"
+                        min="1"
+                        max="24"
+                        value={newPlanningEntry.dailyHours}
                         onChange={handlePlanningInputChange}
                         className="w-full p-2 border border-gray-300 rounded"
                         required
                       />
                     </div>
+
                     <div>
                       <label className="block text-gray-700 mb-2">
                         Heure de début
@@ -428,19 +666,55 @@ const ChefServiceDashboard = () => {
                         required
                       />
                     </div>
+
                     <div>
                       <label className="block text-gray-700 mb-2">
-                        Heure de fin
+                        Heure de fin (calculée)
                       </label>
                       <input
                         type="time"
                         name="endTime"
                         value={newPlanningEntry.endTime}
-                        onChange={handlePlanningInputChange}
-                        className="w-full p-2 border border-gray-300 rounded"
-                        required
+                        className="w-full p-2 border border-gray-300 rounded bg-gray-100"
+                        disabled
                       />
                     </div>
+
+                    <div>
+                      <label className="block text-gray-700 mb-2">
+                        Total heures par semaine:{" "}
+                        {newPlanningEntry.dailyHours * getTotalSelectedDays()}{" "}
+                        heures
+                      </label>
+                      <div className="text-sm text-gray-500">
+                        ({getTotalSelectedDays()} jours ×{" "}
+                        {newPlanningEntry.dailyHours} heures)
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-gray-700 mb-2">
+                        Jours de travail
+                      </label>
+                      <div className="flex flex-wrap gap-3">
+                        {Object.entries(newPlanningEntry.workDays).map(
+                          ([day, isChecked]) => (
+                            <label
+                              key={day}
+                              className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => handleWorkDayChange(day)}
+                                className="form-checkbox h-5 w-5 text-[#123458]"
+                              />
+                              <span className="capitalize">{day}</span>
+                            </label>
+                          ),
+                        )}
+                      </div>
+                    </div>
+
                     <div className="md:col-span-2">
                       <label className="block text-gray-700 mb-2">
                         Description
@@ -458,7 +732,9 @@ const ChefServiceDashboard = () => {
                       type="submit"
                       className="bg-[#123458] text-white px-4 py-2 rounded hover:bg-[#02aafd] transition-colors"
                       disabled={loading.planning}>
-                      {loading.planning ? "Création..." : "Créer le planning"}
+                      {loading.planning
+                        ? "Création..."
+                        : "Créer le planning hebdomadaire"}
                     </button>
                   </div>
                 </form>
@@ -491,6 +767,9 @@ const ChefServiceDashboard = () => {
                             Fin
                           </th>
                           <th className="border border-gray-300 px-4 py-2">
+                            Heures
+                          </th>
+                          <th className="border border-gray-300 px-4 py-2">
                             Description
                           </th>
                           <th className="border border-gray-300 px-4 py-2">
@@ -516,6 +795,15 @@ const ChefServiceDashboard = () => {
                                 {plan.endTime}
                               </td>
                               <td className="border border-gray-300 px-4 py-2">
+                                {plan.hours ||
+                                  (plan.startTime && plan.endTime
+                                    ? calculateHours(
+                                        plan.startTime,
+                                        plan.endTime,
+                                      )
+                                    : "N/A")}
+                              </td>
+                              <td className="border border-gray-300 px-4 py-2">
                                 {plan.description}
                               </td>
                               <td className="border border-gray-300 px-4 py-2">
@@ -530,7 +818,7 @@ const ChefServiceDashboard = () => {
                         ) : (
                           <tr>
                             <td
-                              colSpan="6"
+                              colSpan="7"
                               className="border border-gray-300 px-4 py-2 text-center">
                               Aucun planning trouvé
                             </td>
@@ -694,6 +982,31 @@ const ChefServiceDashboard = () => {
       </div>
     </div>
   );
+};
+
+// Helper function to calculate hours between two time strings
+const calculateHours = (startTime, endTime) => {
+  try {
+    const [startHours, startMinutes] = startTime.split(":").map(Number);
+    const [endHours, endMinutes] = endTime.split(":").map(Number);
+
+    let totalHours = endHours - startHours;
+    let totalMinutes = endMinutes - startMinutes;
+
+    if (totalMinutes < 0) {
+      totalHours--;
+      totalMinutes += 60;
+    }
+
+    if (totalHours < 0) {
+      totalHours += 24; // Assuming the shift crosses midnight
+    }
+
+    return totalHours + (totalMinutes / 60).toFixed(2);
+  } catch (e) {
+    console.error("Error calculating hours:", e);
+    return "N/A";
+  }
 };
 
 export default ChefServiceDashboard;
