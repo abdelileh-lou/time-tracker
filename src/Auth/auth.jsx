@@ -43,13 +43,18 @@
 // };
 
 // auth.js
-export const setAuthData = (token, role, userData) => {
-  console.log("Saving token:", token); // DEBUG
+export const setAuthData = (token, role, responseData) => {
   localStorage.setItem("token", token);
   localStorage.setItem("role", role);
-  localStorage.setItem("userData", JSON.stringify(userData)); // Store complete user data
+  localStorage.setItem(
+    "userData",
+    JSON.stringify({
+      id: responseData.id, // Use responseData.id instead of employeeId
+      username: responseData.username,
+      role: responseData.role, // Optionally include role if needed
+    }),
+  );
 };
-
 export const getAuthToken = () => {
   return localStorage.getItem("token");
 };

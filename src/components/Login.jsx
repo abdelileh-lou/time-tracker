@@ -35,20 +35,22 @@ const Login = () => {
       console.log("Login response:", response);
 
       // 2. Handle different response statuses
+      // Inside handleLogin function after successful login
       if (response.status === 200) {
         // Successful login
-        const { token, role, user } = response.data;
+        const { token, role, employeeId } = response.data; // Destructure employeeId from response
 
         // Validate required fields
-        if (!token || !role) {
-          throw new Error(
-            response.data.message || "Missing token or role in response",
-          );
+        if (!token || !role || !employeeId) {
+          throw new Error("Missing token, role, or employeeId in response");
         }
+
+        // Create user object with id, username, and role
+        const user = { username, role, id: employeeId };
 
         console.log("Data: ", token, role, user);
         // Store authentication data
-        setAuthData(token, role, user || { username, role });
+        setAuthData(token, role, user);
 
         // 3. Redirect based on role
         const roleRoutes = {

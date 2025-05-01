@@ -468,7 +468,10 @@ const EmployeeDashboard = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
+  console.log(employee);
   // Get the current employee data from auth
+  console.log("Employee data:", employee);
+  ///gggggggg
   useEffect(() => {
     const currentUser = getUserData();
     if (!currentUser) {

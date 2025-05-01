@@ -1,124 +1,195 @@
-/*
-import React from "react";
+// import React, { useState, useEffect } from "react";
 
-const PlanningView = ({ employees }) => {
+// export default function PlanningView() {
+//   const [planningData, setPlanningData] = useState(null);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState(null);
+//   const [employeeId, setEmployeeId] = useState(1);
+
+//   useEffect(() => {
+//     const fetchData = async () => {
+//       try {
+//         setLoading(true);
+//         const response = await fetch(
+//           `http://localhost:8092/api/planning/employee/${employeeId}`,
+//         );
+
+//         if (!response.ok) {
+//           throw new Error(`API request failed with status ${response.status}`);
+//         }
+
+//         const data = await response.json();
+//         setPlanningData(data);
+//         setLoading(false);
+//       } catch (err) {
+//         setError(`Failed to fetch planning data: ${err.message}`);
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchData();
+//   }, [employeeId]);
+
+//   const handleEmployeeChange = (e) => {
+//     const value = parseInt(e.target.value);
+//     if (!isNaN(value) && value > 0) {
+//       setEmployeeId(value);
+//     }
+//   };
+
+//   if (loading)
+//     return <div className="p-4">Loading employee planning data...</div>;
+//   if (error) return <div className="p-4 text-red-500">{error}</div>;
+//   if (!planningData)
+//     return <div className="p-4">No planning data available</div>;
+
+//   const planData = JSON.parse(planningData.planJson);
+//   const dayNames = [
+//     "Monday",
+//     "Tuesday",
+//     "Wednesday",
+//     "Thursday",
+//     "Friday",
+//     "Saturday",
+//     "Sunday",
+//   ];
+
+//   return (
+//     <div className="p-4 max-w-lg mx-auto">
+//       <h1 className="text-2xl font-bold mb-4">
+//         Employee #{employeeId} Planning: {planData.name}
+//       </h1>
+
+//       <div className="flex flex-col gap-2 mb-6">
+//         {planData.days.map((day, index) => {
+//           const dayName = day.day || dayNames[index];
+
+//           return (
+//             <div
+//               key={index}
+//               className={`p-4 rounded-lg shadow ${
+//                 day.isWorkDay
+//                   ? "bg-green-100 border-l-4 border-green-500"
+//                   : "bg-gray-100"
+//               }`}>
+//               <div className="font-bold">{dayName}</div>
+//               {day.isWorkDay ? (
+//                 <div className="mt-2">
+//                   <span className="text-green-700">
+//                     Working hours: {day.from} - {day.to}
+//                   </span>
+//                 </div>
+//               ) : (
+//                 <div className="text-gray-500 mt-2">Day off</div>
+//               )}
+//             </div>
+//           );
+//         })}
+//       </div>
+
+//       <div className="bg-blue-50 p-4 rounded-lg shadow">
+//         <label className="block mb-2 font-medium">Employee ID:</label>
+//         <div className="flex gap-2">
+//           <input
+//             type="number"
+//             value={employeeId}
+//             onChange={handleEmployeeChange}
+//             className="border p-2 rounded flex-grow"
+//             min="1"
+//           />
+//           <button
+//             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+//             onClick={() => setEmployeeId(employeeId)}>
+//             Load
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+import React, { useState, useEffect } from "react";
+
+export default function PlanningView({ employee }) {
+  const [planningData, setPlanningData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        if (!employee?.id) return;
+
+        setLoading(true);
+        const response = await fetch(
+          `http://localhost:8092/api/planning/employee/${employee.id}`,
+        );
+
+        if (!response.ok) {
+          throw new Error(`API request failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        setPlanningData(data);
+        setLoading(false);
+      } catch (err) {
+        setError(`Failed to fetch planning data: ${err.message}`);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [employee?.id]); // Fetch data when employee ID changes
+
+  const dayNames = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
+
+  if (loading)
+    return <div className="p-4">Loading employee planning data...</div>;
+  if (error) return <div className="p-4 text-red-500">{error}</div>;
+  if (!planningData)
+    return <div className="p-4">No planning data available</div>;
+
+  const planData = JSON.parse(planningData.planJson);
+
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">Planning des Employés</h2>
+    <div className="p-4 max-w-lg mx-auto">
+      <h1 className="text-2xl font-bold mb-4">
+        {employee.name}'s Planning: {planData.name}
+      </h1>
 
-      {employees.length === 0 ? (
-        <p>Aucun employé disponible.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-gray-200">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="py-3 px-4 border-b text-left">Nom</th>
-                <th className="py-3 px-4 border-b text-left">Email</th>
-                <th className="py-3 px-4 border-b text-left">Département</th>
-                <th className="py-3 px-4 border-b text-left">Horaire</th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.map((emp) => (
-                <tr key={emp.id} className="hover:bg-gray-50">
-                  <td className="py-3 px-4 border-b">{emp.name}</td>
-                  <td className="py-3 px-4 border-b">{emp.email}</td>
-                  <td className="py-3 px-4 border-b">
-                    {emp.department || "N/A"}
-                  </td>
-                  <td className="py-3 px-4 border-b">
-                    {emp.schedule
-                      ? `${emp.schedule.start} - ${emp.schedule.end}`
-                      : "Non défini"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-};
-export default PlanningView;
-*/
-import React from "react";
+      <div className="flex flex-col gap-2 mb-6">
+        {planData.days.map((day, index) => {
+          const dayName = day.day || dayNames[index];
 
-const PlanningView = ({ employee }) => {
-  if (!employee) return <div>Aucun employé disponible.</div>;
-
-  return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">Mon Planning</h2>
-
-      <div className="space-y-4">
-        <div className="bg-gray-50 p-4 rounded border border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-500">Nom</p>
-              <p className="font-medium">{employee.name}</p>
+          return (
+            <div
+              key={index}
+              className={`p-4 rounded-lg shadow ${
+                day.isWorkDay
+                  ? "bg-green-100 border-l-4 border-green-500"
+                  : "bg-gray-100"
+              }`}>
+              <div className="font-bold">{dayName}</div>
+              {day.isWorkDay ? (
+                <div className="mt-2">
+                  <span className="text-green-700">
+                    Working hours: {day.from} - {day.to}
+                  </span>
+                </div>
+              ) : (
+                <div className="text-gray-500 mt-2">Day off</div>
+              )}
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Département</p>
-              <p className="font-medium">{employee.department || "N/A"}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Horaire</p>
-              <p className="font-medium">
-                {employee.schedule
-                  ? `${employee.schedule.start} - ${employee.schedule.end}`
-                  : "Non défini"}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Jours de travail</p>
-              <p className="font-medium">
-                {employee.workingDays
-                  ? employee.workingDays.join(", ")
-                  : "Non défini"}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Add weekly schedule display if available */}
-        {employee.weeklySchedule && (
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-4">
-              Planning Hebdomadaire
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white border border-gray-200">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="py-2 px-4 border-b text-left">Jour</th>
-                    <th className="py-2 px-4 border-b text-left">Heures</th>
-                    <th className="py-2 px-4 border-b text-left">Tâches</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(employee.weeklySchedule).map(
-                    ([day, schedule]) => (
-                      <tr key={day} className="hover:bg-gray-50">
-                        <td className="py-2 px-4 border-b capitalize">{day}</td>
-                        <td className="py-2 px-4 border-b">
-                          {schedule.start} - {schedule.end}
-                        </td>
-                        <td className="py-2 px-4 border-b">
-                          {schedule.tasks?.join(", ") || "Aucune tâche"}
-                        </td>
-                      </tr>
-                    ),
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+          );
+        })}
       </div>
     </div>
   );
-};
-
-export default PlanningView;
+}

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import QRCode from "qrcode";
 
 const Admin = () => {
   // State for navigation
@@ -14,7 +13,7 @@ const Admin = () => {
     username: "",
     password: "",
     role: "employee", // Default role
-    department: "IT", // Default department
+    service: "IT", // Default service
   });
 
   // Available roles for employees
@@ -24,36 +23,103 @@ const Admin = () => {
     { id: "chef", label: "Chef de service" },
   ];
 
-  // Available departments
-  const departments = [
+  // Available services
+  const services = [
     { id: "IT", label: "IT" },
     { id: "TLS", label: "TLS" },
-    { id: "HR", label: "Human Resources" },
-    { id: "Finance", label: "Finance" },
-    { id: "Marketing", label: "Marketing" },
   ];
 
   // States for attendance type management
   const [attendanceTypes, setAttendanceTypes] = useState([]);
-  const [newAttendanceType, setNewAttendanceType] = useState({
-    name: "",
-    description: "",
-  });
-  const [qrCodes, setQrCodes] = useState({}); // Stores generated QR codes
 
   const [loading, setLoading] = useState(false);
 
-  // Generate QR code for an attendance type
-  const generateQrCode = async (typeId, typeName) => {
+  // States for attendance methods
+  const [activeMethod, setActiveMethod] = useState("QrCode");
+  const [priority, setPriority] = useState({
+    first: "QR Code",
+    second: "Facial Recognition",
+  });
+
+  // Modified state for attendance methods
+  const [attendanceMethods, setAttendanceMethods] = useState({
+    qrCode: { active: true, priority: 1 },
+    facialRecognition: { active: true, priority: 2 },
+  });
+
+  // Available attendance methods
+  const attendanceMethodOptions = [
+    { id: "QrCode", label: "QR Code" },
+    { id: "FacialRecognition", label: "Facial Recognition" },
+    { id: "Both", label: "Les deux" },
+  ];
+
+  // Fetch method configuration from backend
+  useEffect(() => {
+    fetchMethodConfig();
+  }, []);
+
+  const fetchMethodConfig = async () => {
     try {
-      const url = `http://localhost:8092/api/attendance/scan/${typeId}`;
-      const qrCodeData = await QRCode.toDataURL(url);
-      setQrCodes((prev) => ({ ...prev, [typeId]: qrCodeData }));
-      return qrCodeData;
-    } catch (err) {
-      console.error("Error generating QR code:", err);
-      return null;
+      const response = await axios.get(
+        "http://localhost:8092/api/attendance-methods",
+      );
+      setAttendanceMethods(response.data);
+
+      // Set the active methods and priorities
+      const activeMethods = [];
+      if (response.data.qrCode.active) activeMethods.push("QrCode");
+      if (response.data.facialRecognition.active)
+        activeMethods.push("FacialRecognition");
+
+      // Set active method based on priority
+      if (activeMethods.length > 0) {
+        const primaryMethod =
+          response.data.qrCode.priority === 1 ? "QrCode" : "FacialRecognition";
+        setActiveMethod(primaryMethod);
+      }
+
+      // Set priority based on the configuration
+      setPriority({
+        first:
+          response.data.qrCode.priority === 1
+            ? "QR Code"
+            : "Facial Recognition",
+        second:
+          response.data.facialRecognition.priority === 1
+            ? "Facial Recognition"
+            : "QR Code",
+      });
+    } catch (error) {
+      console.error("Error fetching methods:", error);
+      // Set defaults if there's an error
+      setAttendanceMethods({
+        qrCode: { active: true, priority: 1 },
+        facialRecognition: { active: true, priority: 2 },
+      });
+      setPriority({ first: "QR Code", second: "Facial Recognition" });
+      setActiveMethod("QrCode");
     }
+  };
+
+  const handleMethodToggle = (method) => {
+    setAttendanceMethods((prev) => ({
+      ...prev,
+      [method]: { ...prev[method], active: !prev[method].active },
+    }));
+  };
+
+  const handlePriorityChange = (method, newPriority) => {
+    const otherMethod = Object.keys(attendanceMethods).find(
+      (m) => m !== method,
+    );
+    setAttendanceMethods((prev) => ({
+      [method]: { ...prev[method], priority: newPriority },
+      [otherMethod]: {
+        ...prev[otherMethod],
+        priority: newPriority === 1 ? 2 : 1,
+      },
+    }));
   };
 
   // Fetch all employees
@@ -69,7 +135,7 @@ const Admin = () => {
     }
   };
 
-  // Fetch all attendance types and generate QR codes
+  // Fetch all attendance types
   const fetchAttendanceTypes = async () => {
     try {
       setLoading(true);
@@ -78,17 +144,6 @@ const Admin = () => {
       );
       const types = response.data || [];
       setAttendanceTypes(types);
-
-      // Generate QR codes for each type
-      const newQrCodes = {};
-      for (const type of types) {
-        const qrCode = await generateQrCode(type.id, type.name);
-        if (qrCode) {
-          newQrCodes[type.id] = qrCode;
-        }
-      }
-      setQrCodes(newQrCodes);
-
       setLoading(false);
     } catch (error) {
       console.error("Error fetching attendance types:", error);
@@ -114,12 +169,12 @@ const Admin = () => {
         username: "",
         password: "",
         role: "employee",
-        department: "IT",
+        service: "IT",
       });
-      alert("Employee added successfully!");
+      alert("Employé ajouté avec succès!");
     } catch (error) {
       console.error("Error adding employee:", error);
-      alert("Failed to add employee.");
+      alert("Échec de l'ajout de l'employé.");
     }
   };
 
@@ -128,69 +183,43 @@ const Admin = () => {
     try {
       await axios.delete(`http://localhost:8092/api/employee/${id}`);
       setEmployees(employees.filter((employee) => employee.id !== id));
-      alert("Employee deleted successfully!");
+      alert("Employé supprimé avec succès!");
     } catch (error) {
       console.error("Error deleting employee:", error);
-      alert("Failed to delete employee.");
-    }
-  };
-
-  // Add a new attendance type and generate QR code
-  const addAttendanceType = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await axios.post(
-        "http://localhost:8092/api/attendance-type",
-        newAttendanceType,
-      );
-      const newType = response.data;
-
-      // Generate QR code for the new type
-      const qrCode = await generateQrCode(newType.id, newType.name);
-
-      setAttendanceTypes([...attendanceTypes, newType]);
-      if (qrCode) {
-        setQrCodes((prev) => ({ ...prev, [newType.id]: qrCode }));
-      }
-
-      setNewAttendanceType({ name: "", description: "" });
-      alert("Attendance type added successfully!");
-    } catch (error) {
-      console.error("Error adding attendance type:", error);
-      alert("Failed to add attendance type.");
+      alert("Échec de la suppression de l'employé.");
     }
   };
 
   // Delete an attendance type
   const deleteAttendanceType = async (id) => {
     try {
-      await axios.delete(`http://localhost:8092/api/attendance-type/${id}`);
+      await axios.delete(`http://localhost:8092/api/attendance-types/${id}`);
       setAttendanceTypes(attendanceTypes.filter((type) => type.id !== id));
-
-      // Remove the QR code from state
-      setQrCodes((prev) => {
-        const newQrCodes = { ...prev };
-        delete newQrCodes[id];
-        return newQrCodes;
-      });
-
-      alert("Attendance type deleted successfully!");
+      alert("Type de pointage supprimé avec succès!");
     } catch (error) {
       console.error("Error deleting attendance type:", error);
-      alert("Failed to delete attendance type.");
+      alert("Échec de la suppression du type de pointage.");
     }
   };
 
-  // Regenerate QR code for a specific attendance type
-  const regenerateQrCode = async (typeId, typeName) => {
+  // Save methods configuration and refresh attendance types
+  const saveMethodsConfig = async () => {
     try {
-      const qrCode = await generateQrCode(typeId, typeName);
-      if (qrCode) {
-        alert("QR code regenerated successfully!");
-      }
+      setLoading(true);
+      await axios.post(
+        "http://localhost:8092/api/attendance-methods",
+        attendanceMethods,
+      );
+
+      // Refresh the attendance types after saving the configuration
+      await fetchAttendanceTypes();
+
+      setLoading(false);
+      alert("Configuration sauvegardée avec succès!");
     } catch (error) {
-      console.error("Error regenerating QR code:", error);
-      alert("Failed to regenerate QR code.");
+      console.error("Error saving methods:", error);
+      setLoading(false);
+      alert("Échec de l'enregistrement de la configuration.");
     }
   };
 
@@ -372,20 +401,20 @@ const Admin = () => {
                     </select>
                   </div>
                   <div className="mb-4">
-                    <label className="block text-gray-700">Département</label>
+                    <label className="block text-gray-700">Service</label>
                     <select
-                      value={newEmployee.department}
+                      value={newEmployee.service}
                       onChange={(e) =>
                         setNewEmployee({
                           ...newEmployee,
-                          department: e.target.value,
+                          service: e.target.value,
                         })
                       }
                       className="mt-1 block w-full border border-gray-300 rounded p-2"
                       required>
-                      {departments.map((dept) => (
-                        <option key={dept.id} value={dept.id}>
-                          {dept.label}
+                      {services.map((service) => (
+                        <option key={service.id} value={service.id}>
+                          {service.label}
                         </option>
                       ))}
                     </select>
@@ -423,7 +452,7 @@ const Admin = () => {
                             Rôle
                           </th>
                           <th className="border border-gray-300 px-4 py-2">
-                            Département
+                            Service
                           </th>
                           <th className="border border-gray-300 px-4 py-2">
                             Actions
@@ -450,7 +479,7 @@ const Admin = () => {
                                 : "Employé"}
                             </td>
                             <td className="border border-gray-300 px-4 py-2">
-                              {employee.department}
+                              {employee.service}
                             </td>
                             <td className="border border-gray-300 px-4 py-2">
                               <button
@@ -476,53 +505,66 @@ const Admin = () => {
                 Gestion des types de pointage
               </h2>
 
-              {/* Add Attendance Type Form */}
+              {/* Attendance Methods Configuration */}
               <div className="bg-white p-6 rounded shadow-md mb-6">
                 <h3 className="text-xl font-semibold mb-4">
-                  Ajouter un type de pointage
+                  Configuration des méthodes de pointage
                 </h3>
-                <form onSubmit={addAttendanceType}>
-                  <div className="mb-4">
-                    <label className="block text-gray-700">Nom</label>
-                    <input
-                      type="text"
-                      value={newAttendanceType.name}
-                      onChange={(e) =>
-                        setNewAttendanceType({
-                          ...newAttendanceType,
-                          name: e.target.value,
-                        })
-                      }
-                      className="mt-1 block w-full border border-gray-300 rounded p-2"
-                      required
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-gray-700">Description</label>
-                    <textarea
-                      value={newAttendanceType.description}
-                      onChange={(e) =>
-                        setNewAttendanceType({
-                          ...newAttendanceType,
-                          description: e.target.value,
-                        })
-                      }
-                      className="mt-1 block w-full border border-gray-300 rounded p-2"
-                      rows="3"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="bg-[#123458] text-white px-4 py-2 rounded hover:bg-[#02aafd] transition-colors">
-                    Ajouter
-                  </button>
-                </form>
+
+                <div className="mb-4 flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={attendanceMethods.qrCode?.active}
+                    onChange={() => handleMethodToggle("qrCode")}
+                    className="mr-2"
+                  />
+                  <span className="mr-4">QR Code</span>
+                  <select
+                    value={attendanceMethods.qrCode?.priority}
+                    onChange={(e) =>
+                      handlePriorityChange("qrCode", parseInt(e.target.value))
+                    }
+                    disabled={!attendanceMethods.qrCode?.active}
+                    className="px-2 py-1 border border-gray-300 rounded">
+                    <option value={1}>Primaire</option>
+                    <option value={2}>Secondaire</option>
+                  </select>
+                </div>
+
+                <div className="mb-4 flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={attendanceMethods.facialRecognition?.active}
+                    onChange={() => handleMethodToggle("facialRecognition")}
+                    className="mr-2"
+                  />
+                  <span className="mr-4">Reconnaissance faciale</span>
+                  <select
+                    value={attendanceMethods.facialRecognition?.priority}
+                    onChange={(e) =>
+                      handlePriorityChange(
+                        "facialRecognition",
+                        parseInt(e.target.value),
+                      )
+                    }
+                    disabled={!attendanceMethods.facialRecognition?.active}
+                    className="px-2 py-1 border border-gray-300 rounded">
+                    <option value={1}>Primaire</option>
+                    <option value={2}>Secondaire</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={saveMethodsConfig}
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
+                  Sauvegarder la configuration
+                </button>
               </div>
 
-              {/* Attendance Type List */}
+              {/* Attendance Types List */}
               <div className="bg-white p-6 rounded shadow-md">
                 <h3 className="text-xl font-semibold mb-4">
-                  Liste des types de pointage
+                  Types de pointage existants
                 </h3>
                 {loading ? (
                   <p>Chargement des types de pointage...</p>
@@ -541,9 +583,6 @@ const Admin = () => {
                             Description
                           </th>
                           <th className="border border-gray-300 px-4 py-2">
-                            QR Code
-                          </th>
-                          <th className="border border-gray-300 px-4 py-2">
                             Actions
                           </th>
                         </tr>
@@ -559,26 +598,6 @@ const Admin = () => {
                             </td>
                             <td className="border border-gray-300 px-4 py-2">
                               {type.description}
-                            </td>
-                            <td className="border border-gray-300 px-4 py-2">
-                              {qrCodes[type.id] ? (
-                                <div className="flex flex-col items-center">
-                                  <img
-                                    src={qrCodes[type.id]}
-                                    alt={`QR Code for ${type.name}`}
-                                    className="w-16 h-16"
-                                  />
-                                  <button
-                                    onClick={() =>
-                                      regenerateQrCode(type.id, type.name)
-                                    }
-                                    className="mt-2 text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 transition-colors">
-                                    Regénérer
-                                  </button>
-                                </div>
-                              ) : (
-                                <p className="text-gray-500">Génération...</p>
-                              )}
                             </td>
                             <td className="border border-gray-300 px-4 py-2">
                               <button
