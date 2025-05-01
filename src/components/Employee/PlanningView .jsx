@@ -41,6 +41,51 @@ export default function PlanningView({ employee }) {
     "Sunday",
   ];
 
+  // Calculate dates for the current week
+  const getCurrentWeekDates = () => {
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 is Sunday, 1 is Monday, etc.
+    const diff = currentDay === 0 ? 6 : currentDay - 1; // Adjust for our Monday start
+
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - diff);
+
+    const weekDates = [];
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(monday);
+      day.setDate(monday.getDate() + i);
+      weekDates.push(day);
+    }
+
+    return weekDates;
+  };
+
+  // Calculate working hours from a schedule
+  const calculateWeeklyHours = (days) => {
+    let totalHours = 0;
+
+    days.forEach((day) => {
+      if (day.isWorkDay && day.from && day.to) {
+        const fromParts = day.from.split(":").map(Number);
+        const toParts = day.to.split(":").map(Number);
+
+        const fromHours = fromParts[0] + fromParts[1] / 60;
+        const toHours = toParts[0] + toParts[1] / 60;
+
+        totalHours += toHours - fromHours;
+      }
+    });
+
+    return totalHours.toFixed(1);
+  };
+
+  // Calculate monthly hours (approximated as 4 times weekly hours)
+  const calculateMonthlyHours = (days) => {
+    const weeklyHours = parseFloat(calculateWeeklyHours(days));
+    const monthlyHours = weeklyHours * 4.33; // Average weeks in a month
+    return monthlyHours.toFixed(1);
+  };
+
   if (loading)
     return <div className="p-4">Loading employee planning data...</div>;
   if (error) return <div className="p-4 text-red-500">{error}</div>;
@@ -48,17 +93,45 @@ export default function PlanningView({ employee }) {
     return <div className="p-4">No planning data available</div>;
 
   const planData = JSON.parse(planningData.planJson);
+  const weekDates = getCurrentWeekDates();
+  const formatDate = (date) => {
+    return date.getDate() + "/" + (date.getMonth() + 1);
+  };
 
   return (
     <div className="p-4 mx-auto">
-      <h1 className="text-2xl font-bold mb-4">
-        {employee.name}'s Planning: {planData.name}
+      {/* Planning name at top */}
+      <h1 className="text-2xl font-bold mb-2 text-center">
+        Planning : {planData.name}
       </h1>
+
+      {/* Employee info and hours summary */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="text-lg font-medium">
+          <span className="text-gray-600">Employee: </span>
+          <span>{employee.username}</span>
+        </div>
+        <div className="flex gap-6">
+          <div>
+            <span className="text-gray-600">Weekly Hours: </span>
+            <span className="font-medium">
+              {calculateWeeklyHours(planData.days)} hrs
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-600">Monthly Hours: </span>
+            <span className="font-medium">
+              {calculateMonthlyHours(planData.days)} hrs
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* Horizontal layout */}
       <div className="grid grid-cols-7 gap-2 mb-6">
         {planData.days.map((day, index) => {
           const dayName = day.day || dayNames[index];
+          const date = weekDates[index];
 
           return (
             <div
@@ -68,7 +141,10 @@ export default function PlanningView({ employee }) {
                   ? "bg-green-100 border-t-4 border-green-500"
                   : "bg-gray-100"
               }`}>
-              <div className="font-bold text-center mb-2">{dayName}</div>
+              <div className="font-bold text-center mb-1">{dayName}</div>
+              <div className="text-xs text-center text-gray-600 mb-2">
+                {formatDate(date)}
+              </div>
               {day.isWorkDay ? (
                 <div className="mt-auto text-center">
                   <span className="text-green-700 text-sm">
