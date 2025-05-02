@@ -33,6 +33,7 @@ const EmployeeDashboard = () => {
     navigate("/login");
   };
 
+  console.log("Employee data:", employee);
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
@@ -73,13 +74,6 @@ const EmployeeDashboard = () => {
               <span className="ml-3">Mes Pointages</span>
             </button>
 
-            <button
-              onClick={() => navigate("/scan-pointage")} // Using navigate instead of setActiveTab since it's a separate page
-              className="flex items-center w-full p-3 mb-2 rounded hover:bg-gray-700">
-              <Clock size={20} />
-              <span className="ml-3">Scanner Pointage</span>
-            </button>
-
             <div className="mt-6 mb-2 text-sm font-medium text-gray-400 uppercase">
               Gérer Profile
             </div>
@@ -108,7 +102,7 @@ const EmployeeDashboard = () => {
           <div className="absolute bottom-4 left-4 right-4">
             <button
               onClick={handleLogout}
-              className="flex items-center w-full p-3 text-red-400 hover:bg-gray-700 rounded">
+              className="flex items-center  p-3 text-red-400 hover:bg-gray-700 rounded">
               <LogOut size={20} />
               <span className="ml-3">Déconnexion</span>
             </button>

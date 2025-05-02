@@ -6,7 +6,6 @@ const ProfileView = ({ employee }) => {
 
   // Generate password dots based on a fixed length (for security)
   const passwordDots = "•".repeat(12); // Using fixed length of 12 for security
-  console.log(employee);
 
   return (
     <div className="bg-white rounded-lg shadow p-6">

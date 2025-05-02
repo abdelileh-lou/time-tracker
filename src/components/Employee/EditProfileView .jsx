@@ -73,11 +73,11 @@ const EditProfileView = ({ employee, setEmployee }) => {
       }
 
       if (photo) {
-        formDataToSend.append("photo", photo);
+        formDataToSend.append("imageFile", photo);
       }
 
       const response = await fetch(
-        `http://localhost:8092/api/employees/${employee.id}`,
+        `http://localhost:8092/api/employee/${employee.id}`,
         {
           method: "PUT",
           body: formDataToSend,
