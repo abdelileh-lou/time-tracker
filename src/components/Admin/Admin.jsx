@@ -1,5 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import {
+  loadModels,
+  detectFaces,
+} from "../../FacialRecognition/facialRecognition";
 
 const Admin = () => {
   // State for navigation
@@ -54,10 +58,59 @@ const Admin = () => {
     { id: "Both", label: "Les deux" },
   ];
 
+  // Facial Recognition States
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [detections, setDetections] = useState([]);
+  const [showFacialRecognition, setShowFacialRecognition] = useState(false);
+  const [videoDimensions, setVideoDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
+  const [facialData, setFacialData] = useState(null);
+
   // Fetch method configuration from backend
   useEffect(() => {
     fetchMethodConfig();
   }, []);
+
+  // Facial Recognition useEffect
+  useEffect(() => {
+    if (showFacialRecognition) {
+      const startVideo = async () => {
+        try {
+          await loadModels();
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+          });
+
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+
+            videoRef.current.onloadedmetadata = () => {
+              setVideoDimensions({
+                width: videoRef.current.videoWidth,
+                height: videoRef.current.videoHeight,
+              });
+              videoRef.current.play();
+            };
+          }
+        } catch (err) {
+          console.error("Error accessing webcam:", err);
+        }
+      };
+
+      startVideo();
+
+      return () => {
+        if (videoRef.current?.srcObject) {
+          videoRef.current.srcObject
+            .getTracks()
+            .forEach((track) => track.stop());
+        }
+      };
+    }
+  }, [showFacialRecognition]);
 
   const fetchMethodConfig = async () => {
     try {
@@ -151,6 +204,49 @@ const Admin = () => {
     }
   };
 
+  const handleDetectFaces = async () => {
+    setLoading(true);
+    try {
+      const faces = await detectFaces(videoRef.current);
+      console.log("Face Detection Results:", faces); // Added console log to show detection results
+      setDetections(faces);
+      drawDetections(faces);
+
+      if (faces.length > 0) {
+        // Store the facial data to be saved with employee
+        const faceData = faces.map((detection) => ({
+          descriptor: Array.from(detection.descriptor),
+          landmarks: detection.landmarks.positions.map((pos) => ({
+            x: pos.x,
+            y: pos.y,
+          })),
+          box: detection.detection.box,
+        }));
+
+        console.log("Processed Facial Data:", faceData); // Added console log for processed data
+        setFacialData(faceData);
+      }
+    } catch (error) {
+      console.error("Detection error:", error);
+    }
+    setLoading(false);
+  };
+
+  const drawDetections = (detections) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const context = canvas.getContext("2d");
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    detections.forEach((detection) => {
+      const { x, y, width, height } = detection.detection.box;
+      context.lineWidth = 2;
+      context.strokeStyle = "#02aafd";
+      context.strokeRect(x, y, width, height);
+    });
+  };
+
   const addEmployee = async (e) => {
     e.preventDefault();
     try {
@@ -161,8 +257,16 @@ const Admin = () => {
         endpoint = "http://localhost:8092/api/manager";
       }
 
-      const response = await axios.post(endpoint, newEmployee);
+      // Convert facialData to JSON string if it exists
+      const employeeData = {
+        ...newEmployee,
+        facialData: facialData ? JSON.stringify(facialData) : null,
+      };
+
+      const response = await axios.post(endpoint, employeeData);
       setEmployees([...employees, response.data]);
+
+      // Reset states
       setNewEmployee({
         name: "",
         email: "",
@@ -171,6 +275,9 @@ const Admin = () => {
         role: "employee",
         service: "IT",
       });
+      setFacialData(null);
+      setShowFacialRecognition(false);
+
       alert("Employé ajouté avec succès!");
     } catch (error) {
       console.error("Error adding employee:", error);
@@ -419,10 +526,82 @@ const Admin = () => {
                       ))}
                     </select>
                   </div>
+
+                  {/* Facial Recognition Section */}
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-lg font-medium">
+                        Reconnaissance faciale
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowFacialRecognition(!showFacialRecognition)
+                        }
+                        className="bg-[#02aafd] text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors">
+                        {showFacialRecognition
+                          ? "Cacher"
+                          : "Ajouter reconnaissance faciale"}
+                      </button>
+                    </div>
+
+                    {showFacialRecognition && (
+                      <div className="border p-4 rounded">
+                        <div className="relative">
+                          <video
+                            ref={videoRef}
+                            width={videoDimensions.width}
+                            height={videoDimensions.height}
+                            autoPlay
+                            muted
+                            className="w-full h-64 bg-gray-200 rounded mb-4"
+                          />
+                          <canvas
+                            ref={canvasRef}
+                            width={videoDimensions.width}
+                            height={videoDimensions.height}
+                            className="absolute top-0 left-0 w-full h-64"
+                          />
+                        </div>
+
+                        <div className="flex space-x-3 mt-3">
+                          <button
+                            type="button"
+                            onClick={handleDetectFaces}
+                            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
+                            disabled={loading}>
+                            {loading ? "Détection..." : "Détecter le visage"}
+                          </button>
+
+                          {detections.length > 0 && (
+                            <div className="bg-green-100 text-green-800 px-3 py-2 rounded flex items-center">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-5 w-5 mr-1"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                              {detections.length === 1
+                                ? "Visage détecté avec succès!"
+                                : `${detections.length} visages détectés`}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     type="submit"
                     className="bg-[#123458] text-white px-4 py-2 rounded hover:bg-[#02aafd] transition-colors">
-                    Ajouter
+                    Ajouter employé
                   </button>
                 </form>
               </div>
@@ -455,6 +634,9 @@ const Admin = () => {
                             Service
                           </th>
                           <th className="border border-gray-300 px-4 py-2">
+                            Facial
+                          </th>
+                          <th className="border border-gray-300 px-4 py-2">
                             Actions
                           </th>
                         </tr>
@@ -480,6 +662,13 @@ const Admin = () => {
                             </td>
                             <td className="border border-gray-300 px-4 py-2">
                               {employee.service}
+                            </td>
+                            <td className="border border-gray-300 px-4 py-2 text-center">
+                              {employee.facialData ? (
+                                <span className="text-green-600">✓</span>
+                              ) : (
+                                <span className="text-red-600">✗</span>
+                              )}
                             </td>
                             <td className="border border-gray-300 px-4 py-2">
                               <button

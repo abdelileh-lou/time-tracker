@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { logout } from "../../Auth/auth";
+import { logout, getUserData } from "../../Auth/auth";
 
 const ChefServiceDashboard = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("planning");
+  const [activePlanningTab, setActivePlanningTab] = useState("create");
   const [planningName, setPlanningName] = useState("");
   const [planning, setPlanning] = useState(
     Array(7).fill({ day: "", from: "", to: "", isWorkDay: false }),
@@ -15,7 +16,9 @@ const ChefServiceDashboard = () => {
   const [employees, setEmployees] = useState([]);
   const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [planningHistory, setPlanningHistory] = useState([]);
-  const [selectedRole, setSelectedRole] = useState("all");
+  const [availablePlannings, setAvailablePlannings] = useState([]);
+  const [selectedPlanning, setSelectedPlanning] = useState("");
+  const [chefService, setChefService] = useState(null);
 
   const daysOfWeek = [
     "Monday",
@@ -27,27 +30,59 @@ const ChefServiceDashboard = () => {
     "Sunday",
   ];
 
+  // ChefServiceDashboard.jsx - Keep the authorization header
   useEffect(() => {
-    const fetchEmployees = async () => {
+    const currentUser = getUserData();
+    if (!currentUser) {
+      navigate("/");
+      return;
+    }
+    setChefService(currentUser);
+    console.log("Current user:", currentUser);
+  }, [navigate]);
+
+  // useEffect(() => {
+  //   // Fetch employees that belong to the same service as the chef
+  //   const fetchEmployees = async () => {
+  //     if (!chefService) return;
+
+  //     try {
+  //       // Assuming the API endpoint is structured to filter employees by serviceId
+  //       //will delete
+  //       const response = await axios.get(
+  //         `http://127.0.0.1:8092/api/employees/my-service`,
+  //       );
+  //       setEmployees(response.data);
+  //     } catch (error) {
+  //       console.error("Error fetching employees:", error);
+  //     }
+  //   };
+
+  //   fetchEmployees();
+  // }, [chefService]);
+
+  useEffect(() => {
+    const fetchAllEmployees = async () => {
       try {
-        const response = await axios.get(
-          "http://127.0.0.1:8092/api/AllEmployees",
-        );
-        setEmployees(response.data);
+        const response = await axios.get("http://127.0.0.1:8092/api/employees");
+        setEmployees(response.data); // Or use a different state variable like setAllEmployees
       } catch (error) {
-        console.error("Error fetching employees:", error);
+        console.error("Error fetching all employees:", error);
       }
     };
-    fetchEmployees();
-  }, []);
+
+    fetchAllEmployees();
+  }, []); // Empty dependency array = runs only on component mount
 
   useEffect(() => {
     if (activeSection === "attendance") {
       fetchAttendanceSheets();
     } else if (activeSection === "history") {
       fetchPlanningHistory();
+    } else if (activeSection === "planning" && activePlanningTab === "assign") {
+      fetchAvailablePlannings();
     }
-  }, [activeSection]);
+  }, [activeSection, activePlanningTab]);
 
   const fetchPlanningHistory = async () => {
     try {
@@ -58,6 +93,17 @@ const ChefServiceDashboard = () => {
     } catch (error) {
       console.error("Error fetching planning history:", error);
       alert("Failed to load planning history.");
+    }
+  };
+
+  const fetchAvailablePlannings = async () => {
+    try {
+      const response = await axios.get(`http://127.0.0.1:8092/api/planning`);
+      setAvailablePlannings(response.data);
+      console.log("Available plannings:", response.data);
+    } catch (error) {
+      console.error("Error fetching available plannings:", error);
+      alert("Failed to load available plannings.");
     }
   };
 
@@ -99,6 +145,7 @@ const ChefServiceDashboard = () => {
           from: day.isWorkDay ? day.from : null,
           to: day.isWorkDay ? day.to : null,
         })),
+        serviceId: chefService?.serviceId,
       };
 
       const response = await axios.post("http://127.0.0.1:8092/api/planning", {
@@ -109,30 +156,47 @@ const ChefServiceDashboard = () => {
 
       // Refresh planning history after saving
       fetchPlanningHistory();
+      // Reset fields after saving
+      resetPlanningForm();
     } catch (error) {
       console.error("Error saving planning:", error);
       alert("Failed to save planning.");
     }
   };
 
+  const resetPlanningForm = () => {
+    setPlanningName("");
+    setPlanning(Array(7).fill({ day: "", from: "", to: "", isWorkDay: false }));
+    setSavedPlanning(null);
+  };
+
   const deletePlanning = async () => {
     try {
-      if (!savedPlanning) {
-        alert("No planning to delete");
+      if (!selectedPlanning) {
+        alert("Please select a planning to delete");
         return;
       }
 
-      await axios.delete(
-        `http://127.0.0.1:8092/api/planning/${savedPlanning.name}`,
+      // Find the selected planning in availablePlannings
+      const planningToDelete = availablePlannings.find(
+        (plan) => plan.id.toString() === selectedPlanning,
       );
-      setSavedPlanning(null);
-      setPlanningName("");
-      setPlanning(
-        Array(7).fill({ day: "", from: "", to: "", isWorkDay: false }),
-      );
+
+      if (!planningToDelete) {
+        alert("Selected planning not found");
+        return;
+      }
+
+      // Parse the planJson to get the name
+      const planningData = JSON.parse(planningToDelete.planJson);
+      const planningName = planningData.name;
+
+      await axios.delete(`http://127.0.0.1:8092/api/planning/${planningName}`);
+      setSelectedPlanning("");
       alert("Planning deleted successfully!");
 
-      // Refresh planning history after deletion
+      // Refresh available plannings and history after deletion
+      fetchAvailablePlannings();
       fetchPlanningHistory();
     } catch (error) {
       console.error("Error deleting planning:", error);
@@ -140,24 +204,67 @@ const ChefServiceDashboard = () => {
     }
   };
 
+  // const assignToEmployees = async () => {
+  //   try {
+  //     if (!selectedPlanning || selectedEmployees.length === 0) {
+  //       alert("Please select a planning and employees");
+  //       return;
+  //     }
+
+  //     await axios.post("http://127.0.0.1:8092/api/planning/assign-planning", {
+  //       planningName: selectedPlanning,
+  //       employeeIds: selectedEmployees,
+  //     });
+  //     alert("Planning assigned to selected employees successfully!");
+
+  //     // Clear selected employees after assignment
+  //     setSelectedEmployees([]);
+
+  //     // Refresh planning history after assignment
+  //     fetchPlanningHistory();
+  //   } catch (error) {
+  //     console.error("Error assigning planning:", error);
+  //     alert("Failed to assign planning.");
+  //   }
+  // };
   const assignToEmployees = async () => {
     try {
-      if (!savedPlanning || selectedEmployees.length === 0) {
+      // Corrected validation: use selectedPlanning instead of savedPlanning
+      if (!selectedPlanning || selectedEmployees.length === 0) {
         alert("Please select a planning and employees");
         return;
       }
 
-      await axios.post("http://127.0.0.1:8092/api/planning/assign-planning", {
-        planningName: savedPlanning.name,
-        employeeIds: selectedEmployees,
-      });
-      alert("Planning assigned to selected employees successfully!");
+      // Find the selected planning object
+      const selectedPlan = availablePlannings.find(
+        (plan) => plan.id.toString() === selectedPlanning,
+      );
 
-      // Refresh planning history after assignment
+      if (!selectedPlan) {
+        alert("Selected planning not found");
+        return;
+      }
+
+      // Parse the planning data from JSON string
+      const planningData = JSON.parse(selectedPlan.planJson);
+
+      // Convert employee IDs to numbers if needed
+      const numericEmployeeIds = selectedEmployees.map((id) => Number(id));
+
+      await axios.post("http://127.0.0.1:8092/api/planning/assign-planning", {
+        planningName: planningData.name, // Use name from parsed planning data
+        employeeIds: numericEmployeeIds, // Send numeric IDs if backend requires
+      });
+
+      alert("Planning assigned to selected employees successfully!");
       fetchPlanningHistory();
     } catch (error) {
       console.error("Error assigning planning:", error);
-      alert("Failed to assign planning.");
+      alert(
+        `Failed to assign planning: ${
+          error.response?.data?.message || error.message
+        }`,
+      );
     }
   };
 
@@ -173,11 +280,6 @@ const ChefServiceDashboard = () => {
     }
   };
 
-  const filteredEmployees =
-    selectedRole === "all"
-      ? employees
-      : employees.filter((employee) => employee.role === selectedRole);
-
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="flex h-screen">
@@ -185,10 +287,13 @@ const ChefServiceDashboard = () => {
         <div className="w-64 bg-[#123458] text-white p-4">
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-2xl font-bold">Chef Service</h1>
+          </div>
+
+          <div className="absolute bottom-4 left-4 right-4">
             <button
               onClick={handleLogout}
-              className="bg-[#88304E] px-3 py-1 rounded hover:bg-opacity-80">
-              Logout
+              className="flex items-center p-3 text-red-400 hover:bg-gray-700 rounded">
+              <span className="ml-3">Déconnexion</span>
             </button>
           </div>
           <nav className="space-y-2">
@@ -227,74 +332,137 @@ const ChefServiceDashboard = () => {
           {activeSection === "planning" && (
             <div>
               <h2 className="text-3xl font-bold mb-6">Gérer Planning</h2>
-              <div className="bg-white p-6 rounded shadow-md">
-                <div className="mb-4">
-                  <label className="block text-gray-700 mb-2">
-                    Planning Name
-                  </label>
-                  <input
-                    type="text"
-                    value={planningName}
-                    onChange={(e) => setPlanningName(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded"
-                    placeholder="Enter planning name"
-                  />
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {daysOfWeek.map((day, index) => (
-                    <div key={index} className="p-4 border rounded">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-bold">{day}</h3>
-                        <label className="flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={planning[index].isWorkDay}
-                            onChange={() => handleWorkDayToggle(index)}
-                            className="mr-2"
-                          />
-                          Work Day
-                        </label>
-                      </div>
-                      {planning[index].isWorkDay && (
-                        <div className="flex items-center gap-2">
-                          <label className="text-sm">From:</label>
-                          <input
-                            type="time"
-                            value={planning[index].from}
-                            onChange={(e) =>
-                              handleInputChange(index, "from", e.target.value)
-                            }
-                            className="border border-gray-300 rounded p-2"
-                          />
-                          <label className="text-sm">To:</label>
-                          <input
-                            type="time"
-                            value={planning[index].to}
-                            onChange={(e) =>
-                              handleInputChange(index, "to", e.target.value)
-                            }
-                            className="border border-gray-300 rounded p-2"
-                          />
+              {/* Planning Management Tabs */}
+              <div className="mb-6 flex border-b">
+                <button
+                  onClick={() => setActivePlanningTab("create")}
+                  className={`px-4 py-2 ${
+                    activePlanningTab === "create"
+                      ? "border-b-2 border-[#02aafd] text-[#02aafd] font-medium"
+                      : "text-gray-500"
+                  }`}>
+                  Create Planning
+                </button>
+                <button
+                  onClick={() => setActivePlanningTab("assign")}
+                  className={`px-4 py-2 ${
+                    activePlanningTab === "assign"
+                      ? "border-b-2 border-[#02aafd] text-[#02aafd] font-medium"
+                      : "text-gray-500"
+                  }`}>
+                  Assign/Delete Planning
+                </button>
+              </div>
+
+              {/* Create Planning Tab */}
+              {activePlanningTab === "create" && (
+                <div className="bg-white p-6 rounded shadow-md">
+                  <div className="mb-4">
+                    <label className="block text-gray-700 mb-2">
+                      Planning Name
+                    </label>
+                    <input
+                      type="text"
+                      value={planningName}
+                      onChange={(e) => setPlanningName(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded"
+                      placeholder="Enter planning name"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {daysOfWeek.map((day, index) => (
+                      <div key={index} className="p-4 border rounded">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-bold">{day}</h3>
+                          <label className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={planning[index].isWorkDay}
+                              onChange={() => handleWorkDayToggle(index)}
+                              className="mr-2"
+                            />
+                            Work Day
+                          </label>
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                        {planning[index].isWorkDay && (
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm">From:</label>
+                            <input
+                              type="time"
+                              value={planning[index].from}
+                              onChange={(e) =>
+                                handleInputChange(index, "from", e.target.value)
+                              }
+                              className="border border-gray-300 rounded p-2"
+                            />
+                            <label className="text-sm">To:</label>
+                            <input
+                              type="time"
+                              value={planning[index].to}
+                              onChange={(e) =>
+                                handleInputChange(index, "to", e.target.value)
+                              }
+                              className="border border-gray-300 rounded p-2"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
 
-                <div className="mt-6 flex flex-col gap-4">
-                  <div className="flex gap-4">
+                  <div className="mt-6 flex gap-4">
                     <button
                       onClick={savePlanning}
                       className="bg-[#02aafd] text-white px-4 py-2 rounded hover:bg-opacity-80 transition-colors">
                       Save Planning
                     </button>
                     <button
-                      onClick={deletePlanning}
-                      className="bg-[#88304E] text-white px-4 py-2 rounded hover:bg-opacity-80 transition-colors">
-                      Delete Planning
+                      onClick={resetPlanningForm}
+                      className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-opacity-80 transition-colors">
+                      Reset Form
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Assign/Delete Planning Tab */}
+              {activePlanningTab === "assign" && (
+                <div className="bg-white p-6 rounded shadow-md">
+                  {/* Planning Selection */}
+                  <div className="mb-6">
+                    <label className="block text-gray-700 mb-2">
+                      Select Planning
+                    </label>
+                    {/* In the Assign/Delete Planning Tab section */}
+                    <select
+                      value={selectedPlanning}
+                      onChange={(e) => setSelectedPlanning(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded">
+                      <option value="">-- Select a planning --</option>
+                      {availablePlannings.map((plan) => (
+                        <option key={plan.id} value={plan.id}>
+                          {JSON.parse(plan.planJson).name}{" "}
+                          {/* Parse the JSON and display name */}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Delete Button */}
+                  <div className="mb-6">
+                    <button
+                      onClick={deletePlanning}
+                      disabled={!selectedPlanning}
+                      className={`bg-[#88304E] text-white px-4 py-2 rounded hover:bg-opacity-80 transition-colors ${
+                        !selectedPlanning ? "opacity-50 cursor-not-allowed" : ""
+                      }`}>
+                      Delete Selected Planning
+                    </button>
+                  </div>
+
+                  <hr className="my-6" />
 
                   {/* Employee Selection Section */}
                   <div className="mt-4 border p-4 rounded">
@@ -302,26 +470,14 @@ const ChefServiceDashboard = () => {
                       Assign Planning to Employees
                     </h3>
 
-                    {/* Employee Filter by Role */}
-                    <div className="mb-4">
-                      <label className="block text-gray-700 mb-2">
-                        Filter by Role:
-                      </label>
-                      <select
-                        value={selectedRole}
-                        onChange={(e) => setSelectedRole(e.target.value)}
-                        className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded">
-                        <option value="all">All Employees</option>
-                        <option value="chef">Chef Service</option>
-                        <option value="admin">Admin</option>
-                        <option value="worker">Worker</option>
-                      </select>
+                    <div className="mb-2 text-sm text-gray-600">
+                      Showing employees from your service only
                     </div>
 
                     {/* Employee Selection Grid */}
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-y-auto border p-2 rounded">
-                      {filteredEmployees.length > 0 ? (
-                        filteredEmployees.map((employee) => (
+                      {employees.length > 0 ? (
+                        employees.map((employee) => (
                           <label
                             key={employee.id}
                             className="flex items-center p-2 hover:bg-gray-100 rounded">
@@ -348,7 +504,7 @@ const ChefServiceDashboard = () => {
                         ))
                       ) : (
                         <p className="col-span-3 text-gray-500 italic">
-                          No employees found with this role
+                          No employees found in your service
                         </p>
                       )}
                     </div>
@@ -357,10 +513,10 @@ const ChefServiceDashboard = () => {
                       <button
                         onClick={assignToEmployees}
                         disabled={
-                          !savedPlanning || selectedEmployees.length === 0
+                          !selectedPlanning || selectedEmployees.length === 0
                         }
                         className={`bg-[#123458] text-white px-4 py-2 rounded transition-colors ${
-                          !savedPlanning || selectedEmployees.length === 0
+                          !selectedPlanning || selectedEmployees.length === 0
                             ? "opacity-50 cursor-not-allowed"
                             : "hover:bg-opacity-80"
                         }`}>
@@ -369,7 +525,7 @@ const ChefServiceDashboard = () => {
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
