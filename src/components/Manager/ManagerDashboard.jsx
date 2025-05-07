@@ -1,62 +1,32 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Client } from "@stomp/stompjs";
 import Facile from "./Facile";
 import {
   loadModels,
   detectFaces,
-  compareFaces, // Add this import
+  compareFaces,
 } from "../../FacialRecognition/facialRecognition";
 
 const ManagerDashboard = () => {
   // States
   const [attendanceRecords, setAttendanceRecords] = useState([]);
-  const [historyRecords, setHistoryRecords] = useState([]);
-  const [employees, setEmployees] = useState([]);
-  const [planning, setPlanning] = useState([]);
   const [activeView, setActiveView] = useState("attendance");
   const [loading, setLoading] = useState(true);
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [department, setDepartment] = useState("");
   const [employeeId, setEmployeeId] = useState("");
-  const [facialData, setFacialData] = useState(null);
   const [verificationStatus, setVerificationStatus] = useState(null);
   const [verificationMessage, setVerificationMessage] = useState("");
   const [storedFacialData, setStoredFacialData] = useState(null);
+  const [isSendingReport, setIsSendingReport] = useState(false);
 
-  const [dateRange, setDateRange] = useState({
-    startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0],
-    endDate: new Date().toISOString().split("T")[0],
-  });
-
-  // Fetch manager profile and department
-  useEffect(() => {
-    const fetchManagerProfile = async () => {
-      try {
-        const managerId = 2;
-        const response = await axios.get(
-          `http://localhost:8092/api/employee/${managerId}`,
-        );
-        setDepartment(response.data.department);
-      } catch (error) {
-        console.error("Error fetching manager profile:", error);
-      }
-    };
-    fetchManagerProfile();
-  }, []);
-
-  // Fetch attendance records
+  // Fetch attendance records - all records without department filtering
   useEffect(() => {
     const fetchAttendanceRecords = async () => {
-      if (!department) return;
-
       try {
         setLoading(true);
         const response = await axios.get(
-          `http://localhost:8092/api/attendance/today/department/${department}`,
+          `http://localhost:8092/api/attendance/record/today`,
         );
+        console.log("Fetched attendance records:", response.data);
         setAttendanceRecords(response.data);
       } catch (error) {
         console.error("Error fetching attendance records:", error);
@@ -68,82 +38,9 @@ const ManagerDashboard = () => {
     fetchAttendanceRecords();
     const intervalId = setInterval(fetchAttendanceRecords, 5 * 60 * 1000);
     return () => clearInterval(intervalId);
-  }, [department]);
+  }, []);
 
-  // useEffect(() => {
-  //   const fetchFacialData = async () => {
-  //     if (!employeeId) {
-  //       setStoredFacialData(null);
-  //       return;
-  //     }
-
-  //     try {
-  //       const response = await axios.get(
-  //         `http://localhost:8092/api/employee/${employeeId}/facial-data`,
-  //       );
-
-  //       // The response.data is already a parsed JSON array
-  //       const descriptor = new Float32Array(response.data);
-  //       setStoredFacialData(descriptor);
-  //     } catch (error) {
-  //       console.error("Error fetching facial data:", error);
-  //       setStoredFacialData(null);
-  //       setVerificationStatus("error");
-  //       setVerificationMessage("No facial data found for this employee");
-  //     }
-  //   };
-
-  //   fetchFacialData();
-  // }, [employeeId]);
-
-  // // Handle facial data capture
-  // const handleFacialDataCapture = async (liveDescriptor) => {
-  //   if (!employeeId) {
-  //     setVerificationStatus("error");
-  //     setVerificationMessage("Please enter Employee ID first");
-  //     return;
-  //   }
-
-  //   if (!storedFacialData) {
-  //     setVerificationStatus("error");
-  //     setVerificationMessage("No registered facial data for this employee");
-  //     return;
-  //   }
-
-  //   setVerificationStatus("pending");
-  //   setVerificationMessage("Verifying face...");
-
-  //   try {
-  //     // Perform local comparison
-  //     const isMatch = compareFaces(liveDescriptor, storedFacialData);
-
-  //     if (isMatch) {
-  //       setVerificationStatus("success");
-  //       setVerificationMessage("Verification successful!");
-
-  //       // Record attendance
-  //       await axios.post("http://localhost:8092/api/attendance/record", {
-  //         employeeId,
-  //         timestamp: new Date().toISOString(),
-  //         status: "PRESENT",
-  //       });
-
-  //       // Refresh attendance records
-  //       const response = await axios.get(
-  //         `http://localhost:8092/api/attendance/today/department/${department}`,
-  //       );
-  //       setAttendanceRecords(response.data);
-  //     } else {
-  //       setVerificationStatus("error");
-  //       setVerificationMessage("Verification failed - Face mismatch");
-  //     }
-  //   } catch (error) {
-  //     console.error("Verification error:", error);
-  //     setVerificationStatus("error");
-  //     setVerificationMessage("Error processing verification");
-  //   }
-  // };
-  // Updated fetchFacialData function in ManagerDashboard.jsx
+  // Fetch facial data for employee ID
   useEffect(() => {
     const fetchFacialData = async () => {
       if (!employeeId) {
@@ -157,9 +54,6 @@ const ManagerDashboard = () => {
         );
 
         console.log("Fetched facial data:", response.data);
-
-        // Store the data as a regular array, not Float32Array
-        // We'll convert it when comparing in the compareFaces function
         setStoredFacialData(response.data);
       } catch (error) {
         console.error("Error fetching facial data:", error);
@@ -172,7 +66,7 @@ const ManagerDashboard = () => {
     fetchFacialData();
   }, [employeeId]);
 
-  // Updated handleFacialDataCapture function
+  // Handle facial data capture and attendance recording
   const handleFacialDataCapture = async (liveDescriptor) => {
     if (!employeeId) {
       setVerificationStatus("error");
@@ -201,14 +95,30 @@ const ManagerDashboard = () => {
         setVerificationMessage("Verification successful!");
 
         try {
-          await axios.post("http://localhost:8092/api/attendance/record", {
-            employeeId: employeeId,
-            status: "PRESENT",
-          });
+          // Create attendance record that properly links to Employee entity
+          const response = await axios.post(
+            "http://localhost:8092/api/attendance/record",
+            {
+              employeeId: parseInt(employeeId),
+              timestamp: new Date().toISOString(),
+              status: "PRESENT",
+            },
+          );
+
+          // Add the new record to the existing records instead of fetching all again
+          if (response.data) {
+            setAttendanceRecords((prevRecords) => [
+              ...prevRecords,
+              response.data,
+            ]);
+          }
         } catch (error) {
           console.error("Recording error:", error);
           setVerificationStatus("error");
-          setVerificationMessage("Failed to record attendance");
+          setVerificationMessage(
+            "Failed to record attendance: " +
+              (error.response?.data?.message || error.message),
+          );
         }
       } else {
         setVerificationStatus("error");
@@ -229,28 +139,33 @@ const ManagerDashboard = () => {
     setVerificationMessage("");
   };
 
-  // Handle sending report
+  // Handle sending report to chef service
   const handleSendReport = async () => {
+    if (attendanceRecords.length === 0) {
+      alert("No attendance records to report");
+      return;
+    }
+
     try {
-      await axios.post("http://localhost:8092/api/attendance/report", {
-        department,
+      setIsSendingReport(true);
+      await axios.post("http://localhost:8092/api/attendance/reports", {
         date: new Date().toISOString(),
         records: attendanceRecords,
+        reportedChef: true,
       });
-      alert("Report sent successfully!");
+
+      // Mark all records as reported in the UI
+      setAttendanceRecords((records) =>
+        records.map((record) => ({ ...record, reportedChef: true })),
+      );
+
+      alert("Report sent successfully to chef service!");
     } catch (error) {
       console.error("Error sending report:", error);
       alert("Error sending report. Please try again.");
+    } finally {
+      setIsSendingReport(false);
     }
-  };
-
-  // Handle date range change
-  const handleDateChange = (e) => {
-    const { name, value } = e.target;
-    setDateRange((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
   };
 
   // Get verification status class
@@ -271,7 +186,7 @@ const ManagerDashboard = () => {
     <div className="flex flex-col h-screen bg-gray-100">
       <header className="bg-white shadow-md px-6 py-4">
         <h1 className="text-2xl font-semibold text-gray-800">
-          Tableau de bord - {department}
+          Tableau de bord
         </h1>
       </header>
 
@@ -365,8 +280,15 @@ const ManagerDashboard = () => {
                   </div>
                   <button
                     onClick={handleSendReport}
-                    className="w-full px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700">
-                    Envoyer au Chef de Service
+                    disabled={isSendingReport || attendanceRecords.length === 0}
+                    className={`w-full px-4 py-2 text-white rounded-md text-sm ${
+                      isSendingReport || attendanceRecords.length === 0
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-green-600 hover:bg-green-700"
+                    }`}>
+                    {isSendingReport
+                      ? "Envoi en cours..."
+                      : "Envoyer au Chef de Service"}
                   </button>
                 </div>
               </div>
@@ -402,21 +324,35 @@ const ManagerDashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {attendanceRecords.length > 0 ? (
+                    {loading ? (
+                      <tr>
+                        <td
+                          colSpan="4"
+                          className="py-4 text-center text-gray-500">
+                          Chargement...
+                        </td>
+                      </tr>
+                    ) : attendanceRecords.length > 0 ? (
                       attendanceRecords.map((record, index) => (
                         <tr key={index}>
                           <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
-                            {record.id}
+                            {record.employeeId}
                           </td>
                           <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
-                            {record.name}
+                            {record.employeeName}
                           </td>
                           <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
                             {new Date(record.timestamp).toLocaleTimeString()}
                           </td>
                           <td className="py-2 px-3 whitespace-nowrap text-sm">
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            <span
+                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                record.reportedChef
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-green-100 text-green-800"
+                              }`}>
                               {record.status}
+                              {record.reportedChef && " ✓"}
                             </span>
                           </td>
                         </tr>
@@ -443,7 +379,6 @@ const ManagerDashboard = () => {
             <h3 className="text-lg font-semibold mb-4">
               Historique des pointages
             </h3>
-            {/* Your history view implementation */}
             <div className="text-center text-gray-500 py-8">
               Cette fonctionnalité sera disponible prochainement
             </div>
@@ -454,7 +389,6 @@ const ManagerDashboard = () => {
         {activeView === "planning" && (
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-semibold mb-4">Planning</h3>
-            {/* Your planning view implementation */}
             <div className="text-center text-gray-500 py-8">
               Cette fonctionnalité sera disponible prochainement
             </div>
