@@ -190,30 +190,26 @@ const ManagerDashboard = () => {
     setVerificationMessage("Verifying face...");
 
     try {
-      // Convert liveDescriptor to array if it's a Float32Array for consistency
       const liveArray = Array.from(liveDescriptor);
-      // Extract the stored descriptor from the first facial data entry
       const storedDescriptor = storedFacialData[0].descriptor;
 
-      // Perform comparison - our updated compareFaces function handles the conversion
-      const isMatch = compareFaces(liveArray, storedDescriptor);
+      // compareFaces should return a similarity score (0.0 - 1.0)
+      const similarity = compareFaces(liveArray, storedDescriptor);
 
-      if (isMatch) {
+      if (similarity > 0.8) {
         setVerificationStatus("success");
         setVerificationMessage("Verification successful!");
 
-        // Record attendance
-        await axios.post("http://localhost:8092/api/attendance/record", {
-          employeeId,
-          timestamp: new Date().toISOString(),
-          status: "PRESENT",
-        });
-
-        // Refresh attendance records
-        const response = await axios.get(
-          `http://localhost:8092/api/attendance/today/department/${department}`,
-        );
-        setAttendanceRecords(response.data);
+        try {
+          await axios.post("http://localhost:8092/api/attendance/record", {
+            employeeId: employeeId,
+            status: "PRESENT",
+          });
+        } catch (error) {
+          console.error("Recording error:", error);
+          setVerificationStatus("error");
+          setVerificationMessage("Failed to record attendance");
+        }
       } else {
         setVerificationStatus("error");
         setVerificationMessage("Verification failed - Face mismatch");
