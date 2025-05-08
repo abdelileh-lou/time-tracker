@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { User, Calendar, Clock, Settings, Edit, LogOut } from "lucide-react";
 import { getUserData, logout } from "../../Auth/auth";
 import { useNavigate } from "react-router-dom";
-import PlanningView from "./PlanningView ";
-import PointageView from "./PointageView ";
-import ProfileView from "./ProfileView ";
-import EditProfileView from "./EditProfileView ";
+import PlanningView from "./PlanningView";
+import PointageView from "./PointageView";
+import ProfileView from "./ProfileView";
+import EditProfileView from "./EditProfileView";
 
 const EmployeeDashboard = () => {
   const [activeTab, setActiveTab] = useState("planning");

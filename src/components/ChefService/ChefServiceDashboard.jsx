@@ -271,9 +271,10 @@ const ChefServiceDashboard = () => {
   const fetchAttendanceSheets = async () => {
     try {
       const response = await axios.get(
-        "http://127.0.0.1:8092/api/attendance-sheets",
+        "http://127.0.0.1:8092/api/chef/records",
       );
       setAttendanceSheets(response.data);
+      console.log("Attendance sheets:", response.data);
     } catch (error) {
       console.error("Error fetching attendance sheets:", error);
       alert("Failed to load attendance sheets.");
@@ -546,8 +547,14 @@ const ChefServiceDashboard = () => {
                     <tbody>
                       {attendanceSheets.map((sheet, index) => (
                         <tr key={index} className="border-b hover:bg-gray-50">
-                          <td className="p-2">{sheet.date}</td>
-                          <td className="p-2">{sheet.employee}</td>
+                          <td className="p-2">
+                            {
+                              new Date(sheet.timestamp)
+                                .toISOString()
+                                .split("T")[0]
+                            }
+                          </td>
+                          <td className="p-2">{sheet.employeeName}</td>
                           <td className="p-2">
                             <span
                               className={`px-2 py-1 rounded text-sm ${

@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Facile from "./Facile";
+import PointageManuel from "./PointageManuel";
+import ProfileView from "../Employee/ProfileView";
+import EditProfileView from "../Employee/EditProfileView";
 import {
   loadModels,
   detectFaces,
   compareFaces,
 } from "../../FacialRecognition/facialRecognition";
+import { getUserData, logout } from "../../Auth/auth"; // Import the auth utilities
 
 const ManagerDashboard = () => {
   // States
@@ -17,6 +21,18 @@ const ManagerDashboard = () => {
   const [verificationMessage, setVerificationMessage] = useState("");
   const [storedFacialData, setStoredFacialData] = useState(null);
   const [isSendingReport, setIsSendingReport] = useState(false);
+  const [manager, setManager] = useState(null);
+
+  // Get manager data from localStorage instead of API
+  useEffect(() => {
+    const currentManager = getUserData();
+    if (!currentManager) {
+      navigate("/login");
+      return;
+    }
+    setManager(currentManager);
+    setLoading(false);
+  }, []);
 
   // Fetch attendance records - all records without department filtering
   useEffect(() => {
@@ -148,7 +164,7 @@ const ManagerDashboard = () => {
 
     try {
       setIsSendingReport(true);
-      await axios.post("http://localhost:8092/api/attendance/reports", {
+      await axios.post("http://localhost:8092/api/attendance/report-to-chef", {
         date: new Date().toISOString(),
         records: attendanceRecords,
         reportedChef: true,
@@ -168,6 +184,12 @@ const ManagerDashboard = () => {
     }
   };
 
+  // Handle logout
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
   // Get verification status class
   const getVerificationStatusClass = () => {
     switch (verificationStatus) {
@@ -184,10 +206,15 @@ const ManagerDashboard = () => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
-      <header className="bg-white shadow-md px-6 py-4">
+      <header className="bg-white shadow-md px-6 py-4 flex justify-between items-center">
         <h1 className="text-2xl font-semibold text-gray-800">
           Tableau de bord
         </h1>
+        <button
+          onClick={handleLogout}
+          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+          Déconnexion
+        </button>
       </header>
 
       <div className="flex-1 p-6">
@@ -202,6 +229,15 @@ const ManagerDashboard = () => {
               }`}
               onClick={() => setActiveView("attendance")}>
               Pointage en temps réel
+            </button>
+            <button
+              className={`py-2 px-4 ${
+                activeView === "manual"
+                  ? "border-b-2 border-blue-500 text-blue-600"
+                  : "text-gray-600 hover:text-blue-500"
+              }`}
+              onClick={() => setActiveView("manual")}>
+              Pointage Manuel
             </button>
             <button
               className={`py-2 px-4 ${
@@ -220,6 +256,24 @@ const ManagerDashboard = () => {
               }`}
               onClick={() => setActiveView("planning")}>
               Planning
+            </button>
+            <button
+              className={`py-2 px-4 ${
+                activeView === "profile"
+                  ? "border-b-2 border-blue-500 text-blue-600"
+                  : "text-gray-600 hover:text-blue-500"
+              }`}
+              onClick={() => setActiveView("profile")}>
+              Consulter Profile
+            </button>
+            <button
+              className={`py-2 px-4 ${
+                activeView === "editProfile"
+                  ? "border-b-2 border-blue-500 text-blue-600"
+                  : "text-gray-600 hover:text-blue-500"
+              }`}
+              onClick={() => setActiveView("editProfile")}>
+              Gérer Profile
             </button>
           </div>
         </div>
@@ -373,6 +427,9 @@ const ManagerDashboard = () => {
           </div>
         )}
 
+        {/* Manual Attendance View */}
+        {activeView === "manual" && <PointageManuel />}
+
         {/* History View */}
         {activeView === "history" && (
           <div className="bg-white p-6 rounded-lg shadow-md">
@@ -393,6 +450,16 @@ const ManagerDashboard = () => {
               Cette fonctionnalité sera disponible prochainement
             </div>
           </div>
+        )}
+
+        {/* Profile View */}
+        {activeView === "profile" && manager && (
+          <ProfileView employee={manager} />
+        )}
+
+        {/* Edit Profile View */}
+        {activeView === "editProfile" && manager && (
+          <EditProfileView employee={manager} setEmployee={setManager} />
         )}
       </div>
     </div>
