@@ -5,7 +5,7 @@
 // } from "../../FacialRecognition/facialRecognition";
 // import axios from "axios";
 
-// const Facile = () => {
+// const Facile = ({ onCapture }) => {
 //   const videoRef = useRef(null);
 //   const canvasRef = useRef(null);
 //   const [detections, setDetections] = useState([]);
@@ -63,6 +63,11 @@
 //           landmarksPreview: face.landmarks.positions.slice(0, 3), // First 3 landmarks
 //         })),
 //       );
+
+//       // If faces detected and onCapture prop exists, send the descriptor to parent
+//       if (faces.length > 0 && onCapture) {
+//         onCapture(faces[0].descriptor);
+//       }
 //     } catch (error) {
 //       console.error("Detection error:", error);
 //     }
@@ -82,48 +87,17 @@
 //     });
 //   };
 
-//   const handleSaveToBackend = async () => {
-//     try {
-//       const faceData = detections.map((detection) => ({
-//         descriptor: Array.from(detection.descriptor),
-//         landmarks: detection.landmarks.positions.map((pos) => ({
-//           x: pos.x,
-//           y: pos.y,
-//         })),
-//         box: detection.detection.box,
-//       }));
-
-//       // Log full data structure before sending
-//       console.log("Saving to backend:", {
-//         faces: faceData.map((face) => ({
-//           ...face,
-//           descriptorPreview: face.descriptor.slice(0, 5), // First 5 elements
-//           landmarksPreview: face.landmarks.slice(0, 3), // First 3 landmarks
-//         })),
-//       });
-
-//       await axios.post("http://localhost:8092/api/facial-recognition", {
-//         faces: faceData,
-//       });
-//       alert("Faces saved successfully!");
-//     } catch (error) {
-//       console.error("Save error:", error);
-//       alert("Failed to save faces.");
-//     }
-//   };
-
 //   return (
-//     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-6">
-//       <h1 className="text-3xl font-bold mb-6">Facial Recognition</h1>
-//       <div className="bg-white p-6 rounded shadow-md w-full max-w-2xl relative">
-//         <div className="relative">
+//     <div className="w-full">
+//       <div className="bg-white rounded shadow-md relative">
+//         <div className="relative mb-4">
 //           <video
 //             ref={videoRef}
 //             width={videoDimensions.width}
 //             height={videoDimensions.height}
 //             autoPlay
 //             muted
-//             className="w-full h-64 bg-gray-200 rounded mb-4"
+//             className="w-full h-64 bg-gray-200 rounded"
 //           />
 //           <canvas
 //             ref={canvasRef}
@@ -132,17 +106,12 @@
 //             className="absolute top-0 left-0 w-full h-64"
 //           />
 //         </div>
-//         <div className="flex gap-4 mb-4">
+//         <div className="flex justify-center mb-4">
 //           <button
 //             onClick={handleDetectFaces}
 //             className="bg-[#02aafd] text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
 //             disabled={loading}>
-//             {loading ? "Detecting..." : "Detect Faces"}
-//           </button>
-//           <button
-//             onClick={handleSaveToBackend}
-//             className="bg-[#123458] text-white px-4 py-2 rounded hover:bg-blue-800 transition-colors">
-//             Save to Backend
+//             {loading ? "Detecting..." : "Detect Face"}
 //           </button>
 //         </div>
 //       </div>
@@ -157,9 +126,8 @@ import {
   loadModels,
   detectFaces,
 } from "../../FacialRecognition/facialRecognition";
-import axios from "axios";
 
-const Facile = ({ onCapture }) => {
+const Facile = ({ onCapture, isActive }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [detections, setDetections] = useState([]);
@@ -168,38 +136,59 @@ const Facile = ({ onCapture }) => {
     width: 0,
     height: 0,
   });
+  const [stream, setStream] = useState(null);
 
+  // Effect to start/stop camera based on isActive prop
   useEffect(() => {
     const startVideo = async () => {
       try {
         await loadModels();
-        const stream = await navigator.mediaDevices.getUserMedia({
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
           video: true,
         });
-        videoRef.current.srcObject = stream;
 
-        videoRef.current.onloadedmetadata = () => {
-          setVideoDimensions({
-            width: videoRef.current.videoWidth,
-            height: videoRef.current.videoHeight,
-          });
-          videoRef.current.play();
-        };
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+          setStream(mediaStream);
+
+          videoRef.current.onloadedmetadata = () => {
+            setVideoDimensions({
+              width: videoRef.current.videoWidth,
+              height: videoRef.current.videoHeight,
+            });
+            videoRef.current.play();
+          };
+        }
       } catch (err) {
         console.error("Error accessing webcam:", err);
       }
     };
 
-    startVideo();
+    const stopVideo = () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+        setStream(null);
+      }
 
-    return () => {
       if (videoRef.current?.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+        videoRef.current.srcObject = null;
       }
     };
-  }, []);
+
+    if (isActive) {
+      startVideo();
+    } else {
+      stopVideo();
+    }
+
+    return () => {
+      stopVideo();
+    };
+  }, [isActive, stream]);
 
   const handleDetectFaces = async () => {
+    if (!isActive) return;
+
     setLoading(true);
     try {
       const faces = await detectFaces(videoRef.current);
@@ -230,6 +219,8 @@ const Facile = ({ onCapture }) => {
 
   const drawDetections = (detections) => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
+
     const context = canvas.getContext("2d");
     context.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -263,9 +254,17 @@ const Facile = ({ onCapture }) => {
         <div className="flex justify-center mb-4">
           <button
             onClick={handleDetectFaces}
-            className="bg-[#02aafd] text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
-            disabled={loading}>
-            {loading ? "Detecting..." : "Detect Face"}
+            className={`${
+              isActive
+                ? "bg-[#02aafd] hover:bg-blue-600"
+                : "bg-gray-400 cursor-not-allowed"
+            } text-white px-4 py-2 rounded transition-colors`}
+            disabled={loading || !isActive}>
+            {loading
+              ? "Detecting..."
+              : isActive
+              ? "Detect Face"
+              : "Camera Inactive"}
           </button>
         </div>
       </div>

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 
-const ManageTrackingTypes = () => {
+const ManageTrackingTypes = ({ onTypeSelection }) => {
   const [trackingTypes, setTrackingTypes] = useState([]);
   const [newType, setNewType] = useState("");
+  const [selectedType, setSelectedType] = useState("Facile"); // Default selection
 
   useEffect(() => {
     // Fetch tracking types from the API
@@ -41,6 +42,12 @@ const ManageTrackingTypes = () => {
     }
   };
 
+  const handleTypeChange = (e) => {
+    const selected = e.target.value;
+    setSelectedType(selected);
+    onTypeSelection(selected); // Notify parent component
+  };
+
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Manage Tracking Types</h1>
@@ -55,6 +62,16 @@ const ManageTrackingTypes = () => {
         <button onClick={handleAddType} className="bg-blue-500 text-white p-2">
           Add
         </button>
+      </div>
+      <div className="mb-4">
+        <label className="block mb-2 font-semibold">Type de Pointage:</label>
+        <select
+          value={selectedType}
+          onChange={handleTypeChange}
+          className="border p-2">
+          <option value="Facile">Facile</option>
+          <option value="QR Code">QR Code</option>
+        </select>
       </div>
       <ul>
         {trackingTypes.map((type) => (
