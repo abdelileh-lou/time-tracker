@@ -28,6 +28,32 @@ const ManagerDashboard = () => {
   const [planningData, setPlanningData] = useState([]);
   const [planningLoading, setPlanningLoading] = useState(false);
   const [planningError, setPlanningError] = useState(null);
+  const [attendanceHistory, setAttendanceHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState(null);
+  const [expandedDates, setExpandedDates] = useState({});
+
+  useEffect(() => {
+    const fetchAttendanceHistory = async () => {
+      if (activeView === "history") {
+        try {
+          setHistoryLoading(true);
+          setHistoryError(null);
+          const response = await axios.get(
+            "http://localhost:8092/api/attendance/history",
+          );
+          setAttendanceHistory(response.data);
+        } catch (error) {
+          console.error("Error fetching attendance history:", error);
+          setHistoryError("Failed to load attendance history");
+        } finally {
+          setHistoryLoading(false);
+        }
+      }
+    };
+
+    fetchAttendanceHistory();
+  }, [activeView]);
 
   useEffect(() => {
     const currentManager = getUserData();
@@ -447,8 +473,119 @@ const ManagerDashboard = () => {
             <h3 className="text-lg font-semibold mb-4">
               Historique des pointages
             </h3>
-            <div className="text-center text-gray-500 py-8">
-              Cette fonctionnalité sera disponible prochainement
+            <div className="overflow-x-auto">
+              {historyLoading ? (
+                <div className="text-center text-gray-500 py-8">
+                  Chargement en cours...
+                </div>
+              ) : historyError ? (
+                <div className="text-center text-red-500 py-8">
+                  {historyError}
+                </div>
+              ) : attendanceHistory.length > 0 ? (
+                <div className="space-y-4">
+                  {Object.entries(
+                    attendanceHistory.reduce((acc, record) => {
+                      const date = new Date(
+                        record.timestamp,
+                      ).toLocaleDateString();
+                      if (!acc[date]) acc[date] = [];
+                      acc[date].push(record);
+                      return acc;
+                    }, {}),
+                  )
+                    .sort(([a], [b]) => new Date(b) - new Date(a)) // Sort dates descending
+                    .map(([date, records]) => (
+                      <div
+                        key={date}
+                        className="border rounded-lg overflow-hidden">
+                        <div
+                          className="flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
+                          onClick={() =>
+                            setExpandedDates((prev) => ({
+                              ...prev,
+                              [date]: !prev[date],
+                            }))
+                          }>
+                          <div className="flex items-center space-x-2">
+                            <svg
+                              className={`w-4 h-4 transform transition-transform ${
+                                expandedDates[date] ? "rotate-90" : ""
+                              }`}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
+                            <span className="font-semibold">{date}</span>
+                          </div>
+                          <span className="text-sm text-gray-500">
+                            {records.length} pointage
+                            {records.length > 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        {expandedDates[date] && (
+                          <div className="p-4 border-t">
+                            <table className="min-w-full">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    ID Employé
+                                  </th>
+                                  <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Nom
+                                  </th>
+                                  <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Heure
+                                  </th>
+                                  <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Statut
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-200">
+                                {records.map((record, index) => (
+                                  <tr key={index}>
+                                    <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
+                                      {record.employeeId}
+                                    </td>
+                                    <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
+                                      {record.employeeName}
+                                    </td>
+                                    <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
+                                      {new Date(
+                                        record.timestamp,
+                                      ).toLocaleTimeString()}
+                                    </td>
+                                    <td className="py-2 px-3 whitespace-nowrap text-sm">
+                                      <span
+                                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                          record.status === "PRESENT"
+                                            ? "bg-green-100 text-green-800"
+                                            : "bg-red-100 text-red-800"
+                                        }`}>
+                                        {record.status}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-8">
+                  Aucun historique de pointage trouvé
+                </div>
+              )}
             </div>
           </div>
         )}
