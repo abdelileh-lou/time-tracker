@@ -20,6 +20,9 @@ const ChefServiceDashboard = () => {
   const [selectedPlanning, setSelectedPlanning] = useState("");
   const [chefService, setChefService] = useState(null);
 
+  // Updated Planning History section for ChefServiceDashboard.jsx
+
+  // Add this state to your existing state variables
   const [expandedDays, setExpandedDays] = useState({});
 
   const daysOfWeek = [
@@ -94,6 +97,7 @@ const ChefServiceDashboard = () => {
         "http://127.0.0.1:8092/api/planning/plannings",
       );
       setPlanningHistory(response.data);
+      console.log("Planning history data:", response.data);
     } catch (error) {
       console.error("Error fetching planning history:", error);
       alert("Failed to load planning history.");
@@ -585,32 +589,40 @@ const ChefServiceDashboard = () => {
               </div>
             </div>
           )}
-
           {activeSection === "history" && (
             <div>
               <h2 className="text-3xl font-bold mb-6">Planning History</h2>
               <div className="bg-white p-6 rounded shadow-md">
                 {planningHistory.length > 0 ? (
-                  // Grouped by date folder structure
+                  // Group plannings by date
                   Object.entries(
-                    planningHistory.reduce((acc, history) => {
+                    planningHistory.reduce((acc, planning) => {
+                      // Extract date in a readable format
                       const date = new Date(
-                        history.createdAt,
+                        planning.createdAt,
                       ).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "long",
                         day: "numeric",
                       });
+
+                      // Create array for this date if it doesn't exist
                       if (!acc[date]) acc[date] = [];
-                      acc[date].push(history);
+
+                      // Add this planning to the date's array
+                      acc[date].push(planning);
                       return acc;
                     }, {}),
                   )
-                    .sort(([a], [b]) => new Date(b) - new Date(a)) // Sort dates descending
-                    .map(([date, histories]) => (
+                    // Sort dates in descending order (newest first)
+                    .sort(
+                      ([dateA], [dateB]) => new Date(dateB) - new Date(dateA),
+                    )
+                    .map(([date, plannings]) => (
                       <div
                         key={date}
                         className="mb-4 border rounded-lg overflow-hidden">
+                        {/* Date folder header - clickable to expand/collapse */}
                         <div
                           className="flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 cursor-pointer"
                           onClick={() =>
@@ -624,8 +636,8 @@ const ChefServiceDashboard = () => {
                             <div>
                               <h3 className="font-semibold">{date}</h3>
                               <p className="text-sm text-gray-500">
-                                {histories.length} planning
-                                {histories.length > 1 ? "s" : ""}
+                                {plannings.length} planning
+                                {plannings.length > 1 ? "s" : ""}
                               </p>
                             </div>
                           </div>
@@ -637,48 +649,89 @@ const ChefServiceDashboard = () => {
                           </span>
                         </div>
 
+                        {/* Planning list when folder is expanded */}
                         {expandedDays[date] && (
                           <div className="border-t">
-                            {histories.map((history, index) => (
-                              <div
-                                key={index}
-                                className="p-4 hover:bg-gray-50 border-b last:border-b-0">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <div className="font-medium">
-                                      {history.planningName}
+                            {plannings.map((planning, index) => {
+                              // Try to parse the planning data if it exists
+                              let planningDetails = {};
+                              try {
+                                if (planning.planJson) {
+                                  planningDetails = JSON.parse(
+                                    planning.planJson,
+                                  );
+                                }
+                              } catch (e) {
+                                console.error(
+                                  "Error parsing planning JSON:",
+                                  e,
+                                );
+                              }
+
+                              return (
+                                <div
+                                  key={index}
+                                  className="p-4 hover:bg-gray-50 border-b last:border-b-0">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <div className="font-medium">
+                                        {/* Use the planning name from the JSON if available, otherwise fallback */}
+                                        {planningDetails.name ||
+                                          planning.planningName ||
+                                          "Unnamed Planning"}
+                                      </div>
+                                      <div className="text-sm text-gray-500">
+                                        Created by:{" "}
+                                        {planning.createdBy || "Unknown"}
+                                      </div>
                                     </div>
-                                    <div className="text-sm text-gray-500">
-                                      Created by: {history.createdBy}
-                                    </div>
+                                    <button
+                                      onClick={() => {
+                                        // Display planning details in a more user-friendly way
+                                        if (planningDetails.days) {
+                                          const workDays = planningDetails.days
+                                            .filter((day) => day.isWorkDay)
+                                            .map(
+                                              (day) =>
+                                                `${day.day}: ${day.from} - ${day.to}`,
+                                            )
+                                            .join("\n");
+
+                                          alert(
+                                            `Planning Details:\n${
+                                              workDays || "No workdays defined"
+                                            }`,
+                                          );
+                                        } else {
+                                          alert(
+                                            "Planning details not available",
+                                          );
+                                        }
+                                      }}
+                                      className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded text-sm">
+                                      View Details
+                                    </button>
                                   </div>
-                                  <button
-                                    className="text-blue-500 hover:text-blue-700 text-sm"
-                                    onClick={() =>
-                                      alert(
-                                        `Details for: ${history.planningName}`,
-                                      )
-                                    }>
-                                    View Details
-                                  </button>
-                                </div>
-                                <div className="mt-2 flex flex-wrap gap-2">
-                                  {history.assignedTo?.length > 0 ? (
-                                    history.assignedTo.map((employee, i) => (
-                                      <span
-                                        key={i}
-                                        className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                                        {employee.name}
+
+                                  {/* Display assigned employees if available */}
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    {planning.assignedTo?.length > 0 ? (
+                                      planning.assignedTo.map((employee, i) => (
+                                        <span
+                                          key={i}
+                                          className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                          {employee.name}
+                                        </span>
+                                      ))
+                                    ) : (
+                                      <span className="text-gray-500 text-sm italic">
+                                        Not assigned to any employees
                                       </span>
-                                    ))
-                                  ) : (
-                                    <span className="text-gray-500 text-sm italic">
-                                      Not assigned to any employees
-                                    </span>
-                                  )}
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </div>
