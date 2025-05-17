@@ -20,6 +20,8 @@ const ChefServiceDashboard = () => {
   const [selectedPlanning, setSelectedPlanning] = useState("");
   const [chefService, setChefService] = useState(null);
 
+  const [expandedDays, setExpandedDays] = useState({});
+
   const daysOfWeek = [
     "Monday",
     "Tuesday",
@@ -64,7 +66,9 @@ const ChefServiceDashboard = () => {
   useEffect(() => {
     const fetchAllEmployees = async () => {
       try {
-        const response = await axios.get("http://127.0.0.1:8092/api/employees");
+        const response = await axios.get(
+          "http://127.0.0.1:8092/api/employees-only",
+        );
         setEmployees(response.data); // Or use a different state variable like setAllEmployees
       } catch (error) {
         console.error("Error fetching all employees:", error);
@@ -87,7 +91,7 @@ const ChefServiceDashboard = () => {
   const fetchPlanningHistory = async () => {
     try {
       const response = await axios.get(
-        "http://127.0.0.1:8092/api/planning/history",
+        "http://127.0.0.1:8092/api/planning/plannings",
       );
       setPlanningHistory(response.data);
     } catch (error) {
@@ -190,6 +194,7 @@ const ChefServiceDashboard = () => {
       // Parse the planJson to get the name
       const planningData = JSON.parse(planningToDelete.planJson);
       const planningName = planningData.name;
+      console.log("Planning name to delete:", planningName);
 
       await axios.delete(`http://127.0.0.1:8092/api/planning/${planningName}`);
       setSelectedPlanning("");
@@ -586,55 +591,98 @@ const ChefServiceDashboard = () => {
               <h2 className="text-3xl font-bold mb-6">Planning History</h2>
               <div className="bg-white p-6 rounded shadow-md">
                 {planningHistory.length > 0 ? (
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-2">Date Created</th>
-                        <th className="text-left p-2">Planning Name</th>
-                        <th className="text-left p-2">Created By</th>
-                        <th className="text-left p-2">Assigned To</th>
-                        <th className="text-left p-2">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {planningHistory.map((history, index) => (
-                        <tr key={index} className="border-b hover:bg-gray-50">
-                          <td className="p-2">{history.createdAt}</td>
-                          <td className="p-2">{history.planningName}</td>
-                          <td className="p-2">{history.createdBy}</td>
-                          <td className="p-2">
-                            <div className="flex flex-wrap gap-1">
-                              {history.assignedTo?.map((employee, i) => (
-                                <span
-                                  key={i}
-                                  className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                                  {employee.name}
-                                </span>
-                              ))}
-                              {(!history.assignedTo ||
-                                history.assignedTo.length === 0) && (
-                                <span className="text-gray-500 italic">
-                                  Not assigned
-                                </span>
-                              )}
+                  // Grouped by date folder structure
+                  Object.entries(
+                    planningHistory.reduce((acc, history) => {
+                      const date = new Date(
+                        history.createdAt,
+                      ).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      });
+                      if (!acc[date]) acc[date] = [];
+                      acc[date].push(history);
+                      return acc;
+                    }, {}),
+                  )
+                    .sort(([a], [b]) => new Date(b) - new Date(a)) // Sort dates descending
+                    .map(([date, histories]) => (
+                      <div
+                        key={date}
+                        className="mb-4 border rounded-lg overflow-hidden">
+                        <div
+                          className="flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 cursor-pointer"
+                          onClick={() =>
+                            setExpandedDays((prev) => ({
+                              ...prev,
+                              [date]: !prev[date],
+                            }))
+                          }>
+                          <div className="flex items-center gap-3">
+                            <span className="text-blue-500 text-xl">📁</span>
+                            <div>
+                              <h3 className="font-semibold">{date}</h3>
+                              <p className="text-sm text-gray-500">
+                                {histories.length} planning
+                                {histories.length > 1 ? "s" : ""}
+                              </p>
                             </div>
-                          </td>
-                          <td className="p-2">
-                            <button
-                              className="bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600"
-                              onClick={() => {
-                                // View details functionality could be added here
-                                alert(
-                                  `Details for planning: ${history.planningName}`,
-                                );
-                              }}>
-                              View Details
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </div>
+                          <span
+                            className={`transform transition-transform ${
+                              expandedDays[date] ? "rotate-90" : ""
+                            }`}>
+                            ▸
+                          </span>
+                        </div>
+
+                        {expandedDays[date] && (
+                          <div className="border-t">
+                            {histories.map((history, index) => (
+                              <div
+                                key={index}
+                                className="p-4 hover:bg-gray-50 border-b last:border-b-0">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="font-medium">
+                                      {history.planningName}
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                      Created by: {history.createdBy}
+                                    </div>
+                                  </div>
+                                  <button
+                                    className="text-blue-500 hover:text-blue-700 text-sm"
+                                    onClick={() =>
+                                      alert(
+                                        `Details for: ${history.planningName}`,
+                                      )
+                                    }>
+                                    View Details
+                                  </button>
+                                </div>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {history.assignedTo?.length > 0 ? (
+                                    history.assignedTo.map((employee, i) => (
+                                      <span
+                                        key={i}
+                                        className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                        {employee.name}
+                                      </span>
+                                    ))
+                                  ) : (
+                                    <span className="text-gray-500 text-sm italic">
+                                      Not assigned to any employees
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))
                 ) : (
                   <div className="text-center py-8 text-gray-500">
                     No planning history found
