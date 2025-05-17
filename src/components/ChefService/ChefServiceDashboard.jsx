@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { logout, getUserData } from "../../Auth/auth";
+import ChefProfileView from "./ChefProfileView";
+import ChefEditProfile from "./ChefEditProfile"; // Import the edit profile component
 
 const ChefServiceDashboard = () => {
   const navigate = useNavigate();
@@ -43,28 +45,9 @@ const ChefServiceDashboard = () => {
       return;
     }
     setChefService(currentUser);
+    console.log("Chef service data:", currentUser);
     console.log("Current user:", currentUser);
   }, [navigate]);
-
-  // useEffect(() => {
-  //   // Fetch employees that belong to the same service as the chef
-  //   const fetchEmployees = async () => {
-  //     if (!chefService) return;
-
-  //     try {
-  //       // Assuming the API endpoint is structured to filter employees by serviceId
-  //       //will delete
-  //       const response = await axios.get(
-  //         `http://127.0.0.1:8092/api/employees/my-service`,
-  //       );
-  //       setEmployees(response.data);
-  //     } catch (error) {
-  //       console.error("Error fetching employees:", error);
-  //     }
-  //   };
-
-  //   fetchEmployees();
-  // }, [chefService]);
 
   useEffect(() => {
     const fetchAllEmployees = async () => {
@@ -212,30 +195,6 @@ const ChefServiceDashboard = () => {
       alert("Failed to delete planning.");
     }
   };
-
-  // const assignToEmployees = async () => {
-  //   try {
-  //     if (!selectedPlanning || selectedEmployees.length === 0) {
-  //       alert("Please select a planning and employees");
-  //       return;
-  //     }
-
-  //     await axios.post("http://127.0.0.1:8092/api/planning/assign-planning", {
-  //       planningName: selectedPlanning,
-  //       employeeIds: selectedEmployees,
-  //     });
-  //     alert("Planning assigned to selected employees successfully!");
-
-  //     // Clear selected employees after assignment
-  //     setSelectedEmployees([]);
-
-  //     // Refresh planning history after assignment
-  //     fetchPlanningHistory();
-  //   } catch (error) {
-  //     console.error("Error assigning planning:", error);
-  //     alert("Failed to assign planning.");
-  //   }
-  // };
   const assignToEmployees = async () => {
     try {
       // Corrected validation: use selectedPlanning instead of savedPlanning
@@ -333,6 +292,28 @@ const ChefServiceDashboard = () => {
                   : "hover:bg-[#02aafd]/50"
               }`}>
               Planning History
+            </button>
+
+            <div className="mt-6 mb-2 text-sm font-medium text-gray-400 uppercase">
+              Gérer Profile
+            </div>
+            <button
+              onClick={() => setActiveSection("viewProfile")}
+              className={`w-full text-left p-2 rounded ${
+                activeSection === "viewProfile"
+                  ? "bg-[#02aafd]"
+                  : "hover:bg-[#02aafd]/50"
+              }`}>
+              Consulter Profile
+            </button>
+            <button
+              onClick={() => setActiveSection("editProfile")}
+              className={`w-full text-left p-2 rounded ${
+                activeSection === "editProfile"
+                  ? "bg-[#02aafd]"
+                  : "hover:bg-[#02aafd]/50"
+              }`}>
+              Modifier Profile
             </button>
           </nav>
         </div>
@@ -743,6 +724,12 @@ const ChefServiceDashboard = () => {
                 )}
               </div>
             </div>
+          )}
+          {activeSection === "viewProfile" && (
+            <ChefProfileView chef={chefService} />
+          )}
+          {activeSection === "editProfile" && (
+            <ChefEditProfile chef={chefService} setChef={setChefService} />
           )}
         </div>
       </div>
