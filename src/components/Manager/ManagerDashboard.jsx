@@ -62,7 +62,13 @@ const ManagerDashboard = () => {
     const setupCamera = async () => {
       if (isCameraActive && videoRef.current) {
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+              width: 640,
+              height: 480,
+              facingMode: "user"
+            } 
+          });
           videoRef.current.srcObject = stream;
           streamRef.current = stream;
         } catch (error) {
@@ -216,21 +222,35 @@ const ManagerDashboard = () => {
   }, []);
 
   const handleDetectFaces = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    if (!videoRef.current || !canvasRef.current) {
+      setVerificationStatus("error");
+      setVerificationMessage("Camera not initialized");
+      return;
+    }
 
     try {
+      setVerificationStatus("pending");
+      setVerificationMessage("Detecting face...");
+
       const detections = await detectFaces(videoRef.current, canvasRef.current);
+      console.log("Face detections:", detections);
+
       if (detections && detections.length > 0) {
         setVerificationStatus("success");
         setVerificationMessage("Face detected successfully!");
+
+        // If we have an employee ID, proceed with verification
+        if (employeeId) {
+          await handleFacialDataCapture(detections[0].descriptor);
+        }
       } else {
         setVerificationStatus("error");
-        setVerificationMessage("No face detected");
+        setVerificationMessage("No face detected. Please ensure your face is clearly visible in the camera.");
       }
     } catch (error) {
       console.error("Error detecting faces:", error);
       setVerificationStatus("error");
-      setVerificationMessage("Error detecting faces");
+      setVerificationMessage("Error detecting faces. Please try again.");
     }
   };
 
@@ -254,8 +274,9 @@ const ManagerDashboard = () => {
       const liveArray = Array.from(liveDescriptor);
       const storedDescriptor = storedFacialData[0].descriptor;
       const similarity = compareFaces(liveArray, storedDescriptor);
+      console.log("Face similarity score:", similarity);
 
-      if (similarity > 0.8) {
+      if (similarity > 0.6) { // Adjusted threshold for better matching
         setVerificationStatus("success");
         setVerificationMessage("Verification successful!");
 
@@ -285,12 +306,12 @@ const ManagerDashboard = () => {
         }
       } else {
         setVerificationStatus("error");
-        setVerificationMessage("Verification failed - Face mismatch");
+        setVerificationMessage("Verification failed - Face mismatch. Please try again.");
       }
     } catch (error) {
       console.error("Verification error:", error);
       setVerificationStatus("error");
-      setVerificationMessage("Error processing verification");
+      setVerificationMessage("Error processing verification. Please try again.");
     }
   };
 
@@ -467,10 +488,12 @@ const ManagerDashboard = () => {
                             className="w-full rounded-lg border border-emerald-200"
                             autoPlay
                             playsInline
+                            style={{ transform: 'scaleX(-1)' }}
                           />
                           <canvas
                             ref={canvasRef}
                             className="absolute top-0 left-0 w-full h-full"
+                            style={{ transform: 'scaleX(-1)' }}
                           />
                         </div>
                         <div className="space-y-2">
