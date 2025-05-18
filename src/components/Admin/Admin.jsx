@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import { Monitor, CalendarClock, Users, Settings, LogOut } from "lucide-react";
 import {
   loadModels,
   detectFaces,
@@ -300,480 +301,446 @@ const Admin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="flex h-screen">
-        {/* Sidebar */}
-        <div className="w-64 bg-[#123458] text-white p-4">
-          <h1 className="text-2xl font-bold mb-8">Admin Dashboard</h1>
-          <nav>
-            <ul>
-              <li className="mb-2">
-                <button
-                  onClick={() => setActiveSection("dashboard")}
-                  className={`w-full text-left p-2 rounded ${
-                    activeSection === "dashboard"
-                      ? "bg-[#02aafd]"
-                      : "hover:bg-[#02aafd]"
-                  }`}>
-                  Dashboard
-                </button>
-              </li>
-              <li className="mb-2">
-                <button
-                  onClick={() => setActiveSection("employees")}
-                  className={`w-full text-left p-2 rounded ${
-                    activeSection === "employees"
-                      ? "bg-[#02aafd]"
-                      : "hover:bg-[#02aafd]"
-                  }`}>
-                  Gérer des employés
-                </button>
-              </li>
-              <li className="mb-2">
-                <button
-                  onClick={() => setActiveSection("attendance")}
-                  className={`w-full text-left p-2 rounded ${
-                    activeSection === "attendance"
-                      ? "bg-[#02aafd]"
-                      : "hover:bg-[#02aafd]"
-                  }`}>
-                  Gérer type pointage
-                </button>
-              </li>
-            </ul>
-          </nav>
+    <div className="flex h-screen bg-emerald-50">
+      {/* Sidebar */}
+      <div className="w-64 bg-white shadow-lg">
+        <div className="p-6 border-b border-emerald-100">
+          <div className="flex items-center gap-2 mb-4">
+            <Monitor size="2rem" className="text-emerald-600" />
+            <CalendarClock size="2rem" className="text-emerald-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-emerald-800">Espace Admin</h1>
+          <p className="text-sm text-emerald-600">NTIC Management</p>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 p-8 overflow-auto">
-          {activeSection === "dashboard" && (
-            <div>
-              <h2 className="text-3xl font-bold mb-6">Tableau de bord</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded shadow-md">
-                  <h3 className="text-xl font-semibold mb-4">Employés</h3>
-                  <p className="text-4xl font-bold">{employees.length}</p>
-                  <button
-                    onClick={() => setActiveSection("employees")}
-                    className="mt-4 bg-[#123458] text-white px-4 py-2 rounded hover:bg-[#02aafd] transition-colors">
-                    Gérer les employés
-                  </button>
-                </div>
+        <nav className="p-4">
+          <ul className="space-y-2">
+            <li>
+              <button
+                onClick={() => setActiveSection("dashboard")}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
+                  activeSection === "dashboard"
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "text-emerald-600 hover:bg-emerald-50"
+                }`}>
+                <Users size={20} />
+                <span>Dashboard</span>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setActiveSection("employees")}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
+                  activeSection === "employees"
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "text-emerald-600 hover:bg-emerald-50"
+                }`}>
+                <Users size={20} />
+                <span>Employees</span>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setActiveSection("attendance")}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
+                  activeSection === "attendance"
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "text-emerald-600 hover:bg-emerald-50"
+                }`}>
+                <CalendarClock size={20} />
+                <span>Attendance</span>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setActiveSection("settings")}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
+                  activeSection === "settings"
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "text-emerald-600 hover:bg-emerald-50"
+                }`}>
+                <Settings size={20} />
+                <span>Settings</span>
+              </button>
+            </li>
+          </ul>
+        </nav>
 
-                <div className="bg-white p-6 rounded shadow-md">
-                  <h3 className="text-xl font-semibold mb-4">
-                    Types de pointage
-                  </h3>
-                  <p className="text-4xl font-bold">{attendanceTypes.length}</p>
-                  <button
-                    onClick={() => setActiveSection("attendance")}
-                    className="mt-4 bg-[#123458] text-white px-4 py-2 rounded hover:bg-[#02aafd] transition-colors">
-                    Gérer les types de pointage
-                  </button>
+        <div className="absolute bottom-4 left-4 right-4">
+          <button
+            onClick={() => {
+              // Add logout logic here
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-all duration-300">
+            <LogOut size={20} />
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto p-8">
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-emerald-600">Loading...</div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Dashboard Section */}
+            {activeSection === "dashboard" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300">
+                  <h3 className="text-lg font-semibold text-emerald-800 mb-2">Total Employees</h3>
+                  <p className="text-3xl font-bold text-emerald-600">{employees.length}</p>
+                </div>
+                <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300">
+                  <h3 className="text-lg font-semibold text-emerald-800 mb-2">Active Attendance Methods</h3>
+                  <p className="text-3xl font-bold text-emerald-600">
+                    {Object.values(attendanceMethods).filter(m => m.active).length}
+                  </p>
+                </div>
+                <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300">
+                  <h3 className="text-lg font-semibold text-emerald-800 mb-2">Attendance Types</h3>
+                  <p className="text-3xl font-bold text-emerald-600">{attendanceTypes.length}</p>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {activeSection === "employees" && (
-            <div>
-              <h2 className="text-3xl font-bold mb-6">Gestion des employés</h2>
-
-              <div className="bg-white p-6 rounded shadow-md mb-6">
-                <h3 className="text-xl font-semibold mb-4">
-                  Ajouter un employé
-                </h3>
-                <form onSubmit={addEmployee}>
-                  <div className="mb-4">
-                    <label className="block text-gray-700">Nom</label>
-                    <input
-                      type="text"
-                      value={newEmployee.name}
-                      onChange={(e) =>
-                        setNewEmployee({ ...newEmployee, name: e.target.value })
-                      }
-                      className="mt-1 block w-full border border-gray-300 rounded p-2"
-                      required
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-gray-700">Email</label>
-                    <input
-                      type="email"
-                      value={newEmployee.email}
-                      onChange={(e) =>
-                        setNewEmployee({
-                          ...newEmployee,
-                          email: e.target.value,
-                        })
-                      }
-                      className="mt-1 block w-full border border-gray-300 rounded p-2"
-                      required
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-gray-700">
-                      Nom d'utilisateur
-                    </label>
-                    <input
-                      type="text"
-                      value={newEmployee.username}
-                      onChange={(e) =>
-                        setNewEmployee({
-                          ...newEmployee,
-                          username: e.target.value,
-                        })
-                      }
-                      className="mt-1 block w-full border border-gray-300 rounded p-2"
-                      required
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-gray-700">Mot de passe</label>
-                    <input
-                      type="password"
-                      value={newEmployee.password}
-                      onChange={(e) =>
-                        setNewEmployee({
-                          ...newEmployee,
-                          password: e.target.value,
-                        })
-                      }
-                      className="mt-1 block w-full border border-gray-300 rounded p-2"
-                      required
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-gray-700">Rôle</label>
-                    <select
-                      value={newEmployee.role}
-                      onChange={(e) =>
-                        setNewEmployee({ ...newEmployee, role: e.target.value })
-                      }
-                      className="mt-1 block w-full border border-gray-300 rounded p-2"
-                      required>
-                      {employeeRoles.map((role) => (
-                        <option key={role.id} value={role.id}>
-                          {role.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-gray-700">Service</label>
-                    <select
-                      value={newEmployee.service}
-                      onChange={(e) =>
-                        setNewEmployee({
-                          ...newEmployee,
-                          service: e.target.value,
-                        })
-                      }
-                      className="mt-1 block w-full border border-gray-300 rounded p-2"
-                      required>
-                      {services.map((service) => (
-                        <option key={service.id} value={service.id}>
-                          {service.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="mb-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-lg font-medium">
-                        Reconnaissance faciale
-                      </h4>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowFacialRecognition(!showFacialRecognition)
-                        }
-                        className="bg-[#02aafd] text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors">
-                        {showFacialRecognition
-                          ? "Cacher"
-                          : "Ajouter reconnaissance faciale"}
-                      </button>
-                    </div>
-
-                    {showFacialRecognition && (
-                      <div className="border p-4 rounded">
-                        <div className="relative">
-                          <video
-                            ref={videoRef}
-                            width={videoDimensions.width}
-                            height={videoDimensions.height}
-                            autoPlay
-                            muted
-                            className="w-full h-64 bg-gray-200 rounded mb-4"
-                          />
-                          <canvas
-                            ref={canvasRef}
-                            width={videoDimensions.width}
-                            height={videoDimensions.height}
-                            className="absolute top-0 left-0 w-full h-64"
+            {/* Employees Section */}
+            {activeSection === "employees" && (
+              <div className="space-y-6">
+                <div className="bg-white p-6 rounded-xl shadow-md">
+                  <h2 className="text-2xl font-bold text-emerald-800 mb-6">Employee Management</h2>
+                  
+                  {/* Add Employee Form */}
+                  <div className="bg-emerald-50 p-6 rounded-lg mb-6">
+                    <h3 className="text-xl font-semibold text-emerald-800 mb-4">Add New Employee</h3>
+                    <form onSubmit={addEmployee} className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-emerald-700 mb-1">Name</label>
+                          <input
+                            type="text"
+                            value={newEmployee.name}
+                            onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
+                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            required
                           />
                         </div>
+                        <div>
+                          <label className="block text-sm font-medium text-emerald-700 mb-1">Email</label>
+                          <input
+                            type="email"
+                            value={newEmployee.email}
+                            onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
+                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-emerald-700 mb-1">Username</label>
+                          <input
+                            type="text"
+                            value={newEmployee.username}
+                            onChange={(e) => setNewEmployee({ ...newEmployee, username: e.target.value })}
+                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-emerald-700 mb-1">Password</label>
+                          <input
+                            type="password"
+                            value={newEmployee.password}
+                            onChange={(e) => setNewEmployee({ ...newEmployee, password: e.target.value })}
+                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-emerald-700 mb-1">Role</label>
+                          <select
+                            value={newEmployee.role}
+                            onChange={(e) => setNewEmployee({ ...newEmployee, role: e.target.value })}
+                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            required
+                          >
+                            {employeeRoles.map((role) => (
+                              <option key={role.id} value={role.id}>
+                                {role.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-emerald-700 mb-1">Service</label>
+                          <select
+                            value={newEmployee.service}
+                            onChange={(e) => setNewEmployee({ ...newEmployee, service: e.target.value })}
+                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            required
+                          >
+                            {services.map((service) => (
+                              <option key={service.id} value={service.id}>
+                                {service.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
 
-                        <div className="flex space-x-3 mt-3">
+                      {/* Facial Recognition Section */}
+                      <div className="mt-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-lg font-medium text-emerald-800">Facial Recognition</h4>
                           <button
                             type="button"
-                            onClick={handleDetectFaces}
-                            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
-                            disabled={loading}>
-                            {loading ? "Détection..." : "Détecter le visage"}
+                            onClick={() => setShowFacialRecognition(!showFacialRecognition)}
+                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                          >
+                            {showFacialRecognition ? "Hide" : "Add Facial Recognition"}
                           </button>
-
-                          {detections.length > 0 && (
-                            <div className="bg-green-100 text-green-800 px-3 py-2 rounded flex items-center">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-5 w-5 mr-1"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M5 13l4 4L19 7"
-                                />
-                              </svg>
-                              {detections.length === 1
-                                ? "Visage détecté avec succès!"
-                                : `${detections.length} visages détectés`}
-                            </div>
-                          )}
                         </div>
+
+                        {showFacialRecognition && (
+                          <div className="border border-emerald-200 p-4 rounded-lg">
+                            <div className="relative">
+                              <video
+                                ref={videoRef}
+                                width={videoDimensions.width}
+                                height={videoDimensions.height}
+                                autoPlay
+                                muted
+                                className="w-full h-64 bg-emerald-100 rounded-lg mb-4"
+                              />
+                              <canvas
+                                ref={canvasRef}
+                                width={videoDimensions.width}
+                                height={videoDimensions.height}
+                                className="absolute top-0 left-0 w-full h-64"
+                              />
+                            </div>
+
+                            <div className="flex space-x-3 mt-3">
+                              <button
+                                type="button"
+                                onClick={handleDetectFaces}
+                                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                                disabled={loading}
+                              >
+                                {loading ? "Detecting..." : "Detect Face"}
+                              </button>
+
+                              {detections.length > 0 && (
+                                <div className="bg-emerald-100 text-emerald-800 px-3 py-2 rounded-lg flex items-center">
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-5 w-5 mr-1"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M5 13l4 4L19 7"
+                                    />
+                                  </svg>
+                                  {detections.length === 1
+                                    ? "Face detected successfully!"
+                                    : `${detections.length} faces detected`}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-6">
+                        <button
+                          type="submit"
+                          className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                        >
+                          Add Employee
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Employee List */}
+                  <div className="mt-6">
+                    <h3 className="text-xl font-semibold text-emerald-800 mb-4">Employee List</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-emerald-50">
+                            <th className="px-4 py-2 text-left text-emerald-800">Name</th>
+                            <th className="px-4 py-2 text-left text-emerald-800">Email</th>
+                            <th className="px-4 py-2 text-left text-emerald-800">Role</th>
+                            <th className="px-4 py-2 text-left text-emerald-800">Service</th>
+                            <th className="px-4 py-2 text-left text-emerald-800">Facial</th>
+                            <th className="px-4 py-2 text-left text-emerald-800">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {employees.map((employee) => (
+                            <tr key={employee.id} className="border-b border-emerald-100 hover:bg-emerald-50">
+                              <td className="px-4 py-2">{employee.name}</td>
+                              <td className="px-4 py-2">{employee.email}</td>
+                              <td className="px-4 py-2">{employee.role}</td>
+                              <td className="px-4 py-2">{employee.service}</td>
+                              <td className="px-4 py-2 text-center">
+                                {employee.facialData ? (
+                                  <span className="text-emerald-600">✓</span>
+                                ) : (
+                                  <span className="text-red-600">✗</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-2">
+                                <button
+                                  onClick={() => deleteEmployee(employee.id)}
+                                  className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Attendance Section */}
+            {activeSection === "attendance" && (
+              <div className="bg-white p-6 rounded-xl shadow-md">
+                <h2 className="text-2xl font-bold text-emerald-800 mb-6">Attendance Settings</h2>
+                <div className="space-y-6">
+                  <div className="p-4 bg-emerald-50 rounded-lg">
+                    <h3 className="text-lg font-semibold text-emerald-800 mb-4">Active Methods</h3>
+                    <div className="space-y-4">
+                      {Object.entries(attendanceMethods).map(([method, config]) => (
+                        <div key={method} className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
+                          <span className="text-emerald-700">{method === 'qrCode' ? 'QR Code' : 'Facial Recognition'}</span>
+                          <div className="flex items-center gap-4">
+                            <select
+                              value={config.priority}
+                              onChange={(e) => handlePriorityChange(method, parseInt(e.target.value))}
+                              disabled={!config.active}
+                              className="px-2 py-1 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            >
+                              <option value={1}>Primary</option>
+                              <option value={2}>Secondary</option>
+                            </select>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={config.active}
+                                onChange={() => handleMethodToggle(method)}
+                                className="sr-only peer"
+                              />
+                              <div className="w-11 h-6 bg-emerald-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-emerald-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                            </label>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-4">
+                      <button
+                        onClick={saveMethodsConfig}
+                        className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                      >
+                        Save Configuration
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Manager View Section */}
+                  <div className="mt-6 bg-white p-6 rounded-lg shadow-sm">
+                    <h3 className="text-lg font-semibold text-emerald-800 mb-4">
+                      Manager View - Priority Method
+                    </h3>
+                    {getHighestPriorityMethod() ? (
+                      <div className="p-4 border-l-4 border-emerald-500 bg-emerald-50">
+                        <p className="font-medium text-emerald-800">
+                          Active Method:{" "}
+                          <span className="font-bold">
+                            {getHighestPriorityMethod().name}
+                          </span>
+                        </p>
+                        <p className="text-sm text-emerald-600 mt-1">
+                          This method will be displayed for managers
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="p-4 border-l-4 border-red-500 bg-red-50">
+                        <p className="font-medium text-red-800">No active method</p>
+                        <p className="text-sm text-red-600 mt-1">
+                          Please activate at least one attendance method
+                        </p>
                       </div>
                     )}
                   </div>
 
-                  <button
-                    type="submit"
-                    className="bg-[#123458] text-white px-4 py-2 rounded hover:bg-[#02aafd] transition-colors">
-                    Ajouter employé
-                  </button>
-                </form>
-              </div>
-
-              <div className="bg-white p-6 rounded shadow-md">
-                <h3 className="text-xl font-semibold mb-4">
-                  Liste des employés
-                </h3>
-                {loading ? (
-                  <p>Chargement des employés...</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse border border-gray-300">
-                      <thead>
-                        <tr className="bg-gray-200">
-                          <th className="border border-gray-300 px-4 py-2">
-                            ID
-                          </th>
-                          <th className="border border-gray-300 px-4 py-2">
-                            Nom
-                          </th>
-                          <th className="border border-gray-300 px-4 py-2">
-                            Email
-                          </th>
-                          <th className="border border-gray-300 px-4 py-2">
-                            Rôle
-                          </th>
-                          <th className="border border-gray-300 px-4 py-2">
-                            Service
-                          </th>
-                          <th className="border border-gray-300 px-4 py-2">
-                            Facial
-                          </th>
-                          <th className="border border-gray-300 px-4 py-2">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {employees.map((employee) => (
-                          <tr key={employee.id}>
-                            <td className="border border-gray-300 px-4 py-2">
-                              {employee.id}
-                            </td>
-                            <td className="border border-gray-300 px-4 py-2">
-                              {employee.name}
-                            </td>
-                            <td className="border border-gray-300 px-4 py-2">
-                              {employee.email}
-                            </td>
-                            <td className="border border-gray-300 px-4 py-2">
-                              {employee.role === "manager"
-                                ? "Manager"
-                                : employee.role === "chef"
-                                ? "Chef de service"
-                                : "Employé"}
-                            </td>
-                            <td className="border border-gray-300 px-4 py-2">
-                              {employee.service}
-                            </td>
-                            <td className="border border-gray-300 px-4 py-2 text-center">
-                              {employee.facialData ? (
-                                <span className="text-green-600">✓</span>
-                              ) : (
-                                <span className="text-red-600">✗</span>
-                              )}
-                            </td>
-                            <td className="border border-gray-300 px-4 py-2">
-                              <button
-                                onClick={() => deleteEmployee(employee.id)}
-                                className="bg-[#88304E] text-white px-2 py-1 rounded hover:bg-[#522546] transition-colors">
-                                Supprimer
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {activeSection === "attendance" && (
-            <div>
-              <h2 className="text-3xl font-bold mb-6">
-                Gestion des types de pointage
-              </h2>
-
-              <div className="bg-white p-6 rounded shadow-md mb-6">
-                <h3 className="text-xl font-semibold mb-4">
-                  Configuration des méthodes de pointage
-                </h3>
-
-                <div className="mb-4 flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={attendanceMethods.qrCode?.active}
-                    onChange={() => handleMethodToggle("qrCode")}
-                    className="mr-2"
-                  />
-                  <span className="mr-4">QR Code</span>
-                  <select
-                    value={attendanceMethods.qrCode?.priority}
-                    onChange={(e) =>
-                      handlePriorityChange("qrCode", parseInt(e.target.value))
-                    }
-                    disabled={!attendanceMethods.qrCode?.active}
-                    className="px-2 py-1 border border-gray-300 rounded">
-                    <option value={1}>Primaire</option>
-                    <option value={2}>Secondaire</option>
-                  </select>
+                  {/* Saved Configuration */}
+                  {savedConfiguration.length > 0 && (
+                    <div className="mt-6">
+                      <h4 className="text-lg font-semibold text-emerald-800 mb-3">
+                        Current Configuration
+                      </h4>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="bg-emerald-50">
+                              <th className="px-4 py-2 text-left text-emerald-800">Method Type</th>
+                              <th className="px-4 py-2 text-left text-emerald-800">Status</th>
+                              <th className="px-4 py-2 text-left text-emerald-800">Priority</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {savedConfiguration.map((config, index) => (
+                              <tr key={index} className="border-b border-emerald-100">
+                                <td className="px-4 py-2">{config.type}</td>
+                                <td className="px-4 py-2">
+                                  {config.active ? (
+                                    <span className="text-emerald-600">Active</span>
+                                  ) : (
+                                    <span className="text-red-600">Inactive</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-2">
+                                  {config.priority === 1 ? "Primary" : "Secondary"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
-
-                <div className="mb-4 flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={attendanceMethods.facialRecognition?.active}
-                    onChange={() => handleMethodToggle("facialRecognition")}
-                    className="mr-2"
-                  />
-                  <span className="mr-4">Reconnaissance faciale</span>
-                  <select
-                    value={attendanceMethods.facialRecognition?.priority}
-                    onChange={(e) =>
-                      handlePriorityChange(
-                        "facialRecognition",
-                        parseInt(e.target.value),
-                      )
-                    }
-                    disabled={!attendanceMethods.facialRecognition?.active}
-                    className="px-2 py-1 border border-gray-300 rounded">
-                    <option value={1}>Primaire</option>
-                    <option value={2}>Secondaire</option>
-                  </select>
-                </div>
-
-                <button
-                  onClick={saveMethodsConfig}
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
-                  Sauvegarder la configuration
-                </button>
               </div>
+            )}
 
-              {/* Manager View Section */}
-              <div className="mt-6 bg-white p-6 rounded shadow-md">
-                <h3 className="text-xl font-semibold mb-4">
-                  Vue manager - Méthode de pointage prioritaire
-                </h3>
-                {getHighestPriorityMethod() ? (
-                  <div className="p-4 border-l-4 border-green-500 bg-green-50">
-                    <p className="font-medium">
-                      Méthode active:{" "}
-                      <span className="font-bold">
-                        {getHighestPriorityMethod().name}
-                      </span>
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Cette méthode sera affichée pour les managers
-                    </p>
-                  </div>
-                ) : (
-                  <div className="p-4 border-l-4 border-red-500 bg-red-50">
-                    <p className="font-medium">Aucune méthode active</p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Veuillez activer au moins une méthode de pointage
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Saved Configuration */}
-              {savedConfiguration.length > 0 && (
-                <div className="mt-6">
-                  <h4 className="text-lg font-semibold mb-3">
-                    Configuration actuelle
-                  </h4>
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse border border-gray-300">
-                      <thead>
-                        <tr className="bg-gray-100">
-                          <th className="border border-gray-300 px-4 py-2">
-                            Type de pointage
-                          </th>
-                          <th className="border border-gray-300 px-4 py-2">
-                            Statut
-                          </th>
-                          <th className="border border-gray-300 px-4 py-2">
-                            Priorité
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {savedConfiguration.map((config, index) => (
-                          <tr key={index}>
-                            <td className="border border-gray-300 px-4 py-2">
-                              {config.type}
-                            </td>
-                            <td className="border border-gray-300 px-4 py-2">
-                              {config.active ? (
-                                <span className="text-green-600">Activé</span>
-                              ) : (
-                                <span className="text-red-600">Désactivé</span>
-                              )}
-                            </td>
-                            <td className="border border-gray-300 px-4 py-2">
-                              {config.priority === 1
-                                ? "Primaire"
-                                : "Secondaire"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+            {/* Settings Section */}
+            {activeSection === "settings" && (
+              <div className="bg-white p-6 rounded-xl shadow-md">
+                <h2 className="text-2xl font-bold text-emerald-800 mb-6">System Settings</h2>
+                <div className="space-y-6">
+                  <div className="p-4 bg-emerald-50 rounded-lg">
+                    <h3 className="text-lg font-semibold text-emerald-800 mb-4">General Settings</h3>
+                    {/* Add settings content here */}
                   </div>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

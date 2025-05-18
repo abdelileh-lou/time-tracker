@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import Facile from "./Facile";
 import QrCodeGenerator from "./QrCodeGenerator";
 import PointageManuel from "./PointageManuel";
 import ProfileView from "../Employee/ProfileView";
 import EditProfileView from "../Employee/EditProfileView";
+import { Monitor, CalendarClock, Users, Settings, LogOut, ClipboardList, History, User } from "lucide-react";
 import {
   loadModels,
   detectFaces,
@@ -13,6 +14,11 @@ import {
 import { getUserData, logout } from "../../Auth/auth";
 
 const ManagerDashboard = () => {
+  // Add missing refs
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
+
   // States
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [activeView, setActiveView] = useState("attendance");
@@ -32,6 +38,47 @@ const ManagerDashboard = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState(null);
   const [expandedDates, setExpandedDates] = useState({});
+  const [attendanceMethods, setAttendanceMethods] = useState({
+    qrCode: { active: true, priority: 1 },
+    facialRecognition: { active: true, priority: 2 }
+  });
+
+  // Initialize facial recognition models
+  useEffect(() => {
+    const initializeFacialRecognition = async () => {
+      try {
+        await loadModels();
+        console.log("Facial recognition models loaded successfully");
+      } catch (error) {
+        console.error("Error loading facial recognition models:", error);
+      }
+    };
+
+    initializeFacialRecognition();
+  }, []);
+
+  // Handle camera stream
+  useEffect(() => {
+    const setupCamera = async () => {
+      if (isCameraActive && videoRef.current) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          videoRef.current.srcObject = stream;
+          streamRef.current = stream;
+        } catch (error) {
+          console.error("Error accessing camera:", error);
+          setIsCameraActive(false);
+        }
+      } else if (!isCameraActive && streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        if (videoRef.current) {
+          videoRef.current.srcObject = null;
+        }
+      }
+    };
+
+    setupCamera();
+  }, [isCameraActive]);
 
   useEffect(() => {
     const fetchAttendanceHistory = async () => {
@@ -156,6 +203,37 @@ const ManagerDashboard = () => {
     setIsCameraActive(shouldActivateCamera);
   }, [activeView, primaryMethod]);
 
+  useEffect(() => {
+    const fetchAttendanceMethods = async () => {
+      try {
+        const response = await axios.get("http://localhost:8092/api/attendance-methods");
+        setAttendanceMethods(response.data);
+      } catch (error) {
+        console.error("Error fetching attendance methods:", error);
+      }
+    };
+    fetchAttendanceMethods();
+  }, []);
+
+  const handleDetectFaces = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    try {
+      const detections = await detectFaces(videoRef.current, canvasRef.current);
+      if (detections && detections.length > 0) {
+        setVerificationStatus("success");
+        setVerificationMessage("Face detected successfully!");
+      } else {
+        setVerificationStatus("error");
+        setVerificationMessage("No face detected");
+      }
+    } catch (error) {
+      console.error("Error detecting faces:", error);
+      setVerificationStatus("error");
+      setVerificationMessage("Error detecting faces");
+    }
+  };
+
   const handleFacialDataCapture = async (liveDescriptor) => {
     if (!employeeId) {
       setVerificationStatus("error");
@@ -270,403 +348,324 @@ const ManagerDashboard = () => {
     }
   };
 
-  return (
-    <div className="flex flex-col h-screen bg-gray-100">
-      <header className="bg-white shadow-md px-6 py-4 flex justify-between items-center">
-        <h1 className="text-2xl font-semibold text-gray-800">
-          Tableau de bord
-        </h1>
-        <button
-          onClick={handleLogout}
-          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-          Déconnexion
-        </button>
-      </header>
+  const getActiveMethod = () => {
+    const methods = Object.entries(attendanceMethods)
+      .filter(([_, config]) => config.active)
+      .sort((a, b) => a[1].priority - b[1].priority);
 
-      <div className="flex-1 p-6">
-        <div className="mb-6 border-b">
-          <div className="flex space-x-4">
-            {[
-              "attendance",
-              "manual",
-              "history",
-              "planning",
-              "profile",
-              "editProfile",
-            ].map((view) => (
-              <button
-                key={view}
-                className={`py-2 px-4 ${
-                  activeView === view
-                    ? "border-b-2 border-blue-500 text-blue-600"
-                    : "text-gray-600 hover:text-blue-500"
-                }`}
-                onClick={() => handleTabChange(view)}>
-                {
-                  {
-                    attendance: "Pointage en temps réel",
-                    manual: "Pointage Manuel",
-                    history: "Historique",
-                    planning: "Planning",
-                    profile: "Consulter Profile",
-                    editProfile: "Gérer Profile",
-                  }[view]
-                }
-              </button>
-            ))}
+    // Return the method with highest priority
+    return methods.length > 0 ? methods[0][0] : null;
+  };
+
+  return (
+    <div className="flex h-screen bg-emerald-50">
+      {/* Sidebar */}
+      <div className="w-64 bg-white shadow-lg">
+        <div className="p-6 border-b border-emerald-100">
+          <div className="flex items-center gap-2 mb-4">
+            <Monitor size="2rem" className="text-emerald-600" />
+            <CalendarClock size="2rem" className="text-emerald-600" />
           </div>
+          <h1 className="text-2xl font-bold text-emerald-800">Espace Manager</h1>
+          <p className="text-sm text-emerald-600">NTIC Management</p>
         </div>
 
-        {activeView === "attendance" && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-12 gap-6">
-              <div className="col-span-3 bg-white p-4 rounded-lg shadow-md">
-                <h3 className="text-lg font-semibold mb-4">Vérification</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      ID Employé
-                    </label>
-                    <input
-                      type="text"
-                      value={employeeId}
-                      onChange={handleEmployeeIdChange}
-                      className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                      placeholder="Entrez l'ID"
-                    />
-                  </div>
-                  {verificationStatus && (
-                    <div
-                      className={`p-3 border rounded-md mt-4 ${getVerificationStatusClass()}`}>
-                      {verificationMessage}
-                    </div>
-                  )}
-                </div>
+        <div className="p-4">
+          {manager && (
+            <div className="flex items-center mb-6 p-4 bg-emerald-50 rounded-lg">
+              <div className="bg-emerald-100 rounded-full p-2">
+                <User size={24} className="text-emerald-600" />
               </div>
-
-              <div className="col-span-6">
-                {primaryMethod === "qr" ? (
-                  <QrCodeGenerator />
-                ) : (
-                  <div className="bg-white p-4 rounded-lg shadow-md">
-                    <h3 className="text-lg font-semibold mb-4 text-center">
-                      {isCameraActive ? "Capture Faciale" : "Caméra désactivée"}
-                    </h3>
-                    <div className="flex justify-center">
-                      <Facile
-                        onCapture={handleFacialDataCapture}
-                        isActive={isCameraActive}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="col-span-3 bg-white p-4 rounded-lg shadow-md">
-                <h3 className="text-lg font-semibold mb-4">Statistiques</h3>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Pointages aujourd'hui
-                    </p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {attendanceRecords.length}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleSendReport}
-                    disabled={isSendingReport || attendanceRecords.length === 0}
-                    className={`w-full px-4 py-2 text-white rounded-md text-sm ${
-                      isSendingReport || attendanceRecords.length === 0
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-green-600 hover:bg-green-700"
-                    }`}>
-                    {isSendingReport
-                      ? "Envoi en cours..."
-                      : "Envoyer au Chef de Service"}
-                  </button>
-                </div>
+              <div className="ml-3">
+                <div className="font-medium text-emerald-800">{manager.name}</div>
+                <div className="text-sm text-emerald-600">{manager.email}</div>
               </div>
             </div>
+          )}
 
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Pointages du jour</h3>
-                <div className="flex space-x-2">
-                  <button className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
-                    Exporter PDF
-                  </button>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-white">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ID
-                      </th>
-                      <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Nom
-                      </th>
-                      <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Heure
-                      </th>
-                      <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Statut
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {loading ? (
-                      <tr>
-                        <td
-                          colSpan="4"
-                          className="py-4 text-center text-gray-500">
-                          Chargement...
-                        </td>
-                      </tr>
-                    ) : attendanceRecords.length > 0 ? (
-                      attendanceRecords.map((record, index) => (
-                        <tr key={index}>
-                          <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
-                            {record.employeeId}
-                          </td>
-                          <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
-                            {record.employeeName}
-                          </td>
-                          <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
-                            {new Date(record.timestamp).toLocaleTimeString()}
-                          </td>
-                          <td className="py-2 px-3 whitespace-nowrap text-sm">
-                            <span
-                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                record.reportedChef
-                                  ? "bg-blue-100 text-blue-800"
-                                  : "bg-green-100 text-green-800"
-                              }`}>
-                              {record.status}
-                              {record.reportedChef && " ✓"}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan="4"
-                          className="py-4 text-center text-gray-500">
-                          Aucun pointage enregistré aujourd'hui
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+          <nav>
+            <button
+              onClick={() => handleTabChange("attendance")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
+                activeView === "attendance"
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "text-emerald-600 hover:bg-emerald-50"
+              }`}>
+              <CalendarClock size={20} />
+              <span>Attendance Management</span>
+            </button>
+
+            <button
+              onClick={() => handleTabChange("history")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
+                activeView === "history"
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "text-emerald-600 hover:bg-emerald-50"
+              }`}>
+              <History size={20} />
+              <span>Attendance History</span>
+            </button>
+
+            <div className="mt-6 mb-2 text-sm font-medium text-emerald-600 uppercase">
+              Profile Management
             </div>
+
+            <button
+              onClick={() => handleTabChange("profile")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
+                activeView === "profile"
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "text-emerald-600 hover:bg-emerald-50"
+              }`}>
+              <User size={20} />
+              <span>View Profile</span>
+            </button>
+
+            <button
+              onClick={() => handleTabChange("editProfile")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
+                activeView === "editProfile"
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "text-emerald-600 hover:bg-emerald-50"
+              }`}>
+              <Settings size={20} />
+              <span>Edit Profile</span>
+            </button>
+          </nav>
+
+          <div className="absolute bottom-4 left-4 right-4">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-all duration-300">
+              <LogOut size={20} />
+              <span>Logout</span>
+            </button>
           </div>
-        )}
+        </div>
+      </div>
 
-        {activeView === "manual" && <PointageManuel />}
-
-        {activeView === "history" && (
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold mb-4">
-              Historique des pointages
-            </h3>
-            <div className="overflow-x-auto">
-              {historyLoading ? (
-                <div className="text-center text-gray-500 py-8">
-                  Chargement en cours...
-                </div>
-              ) : historyError ? (
-                <div className="text-center text-red-500 py-8">
-                  {historyError}
-                </div>
-              ) : attendanceHistory.length > 0 ? (
-                <div className="space-y-4">
-                  {Object.entries(
-                    attendanceHistory.reduce((acc, record) => {
-                      const date = new Date(
-                        record.timestamp,
-                      ).toLocaleDateString();
-                      if (!acc[date]) acc[date] = [];
-                      acc[date].push(record);
-                      return acc;
-                    }, {}),
-                  )
-                    .sort(([a], [b]) => new Date(b) - new Date(a)) // Sort dates descending
-                    .map(([date, records]) => (
-                      <div
-                        key={date}
-                        className="border rounded-lg overflow-hidden">
-                        <div
-                          className="flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
-                          onClick={() =>
-                            setExpandedDates((prev) => ({
-                              ...prev,
-                              [date]: !prev[date],
-                            }))
-                          }>
-                          <div className="flex items-center space-x-2">
-                            <svg
-                              className={`w-4 h-4 transform transition-transform ${
-                                expandedDates[date] ? "rotate-90" : ""
-                              }`}
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 5l7 7-7 7"
-                              />
-                            </svg>
-                            <span className="font-semibold">{date}</span>
-                          </div>
-                          <span className="text-sm text-gray-500">
-                            {records.length} pointage
-                            {records.length > 1 ? "s" : ""}
-                          </span>
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto p-8">
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-lg text-emerald-600">Loading...</div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {activeView === "attendance" && (
+              <div>
+                <h2 className="text-2xl font-bold text-emerald-800 mb-6">Attendance Management</h2>
+                <div className="grid grid-cols-1 gap-6">
+                  {/* Show only the highest priority method */}
+                  {getActiveMethod() === 'facialRecognition' && (
+                    <div className="bg-white p-6 rounded-xl shadow-md">
+                      <h3 className="text-lg font-semibold text-emerald-800 mb-4">Facial Recognition</h3>
+                      <div className="space-y-4">
+                        <div className="relative">
+                          <video
+                            ref={videoRef}
+                            className="w-full rounded-lg border border-emerald-200"
+                            autoPlay
+                            playsInline
+                          />
+                          <canvas
+                            ref={canvasRef}
+                            className="absolute top-0 left-0 w-full h-full"
+                          />
                         </div>
-                        {expandedDates[date] && (
-                          <div className="p-4 border-t">
-                            <table className="min-w-full">
-                              <thead className="bg-gray-50">
-                                <tr>
-                                  <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    ID Employé
-                                  </th>
-                                  <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Nom
-                                  </th>
-                                  <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Heure
-                                  </th>
-                                  <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Statut
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-gray-200">
-                                {records.map((record, index) => (
-                                  <tr key={index}>
-                                    <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
-                                      {record.employeeId}
-                                    </td>
-                                    <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
-                                      {record.employeeName}
-                                    </td>
-                                    <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
-                                      {new Date(
-                                        record.timestamp,
-                                      ).toLocaleTimeString()}
-                                    </td>
-                                    <td className="py-2 px-3 whitespace-nowrap text-sm">
-                                      <span
-                                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                          record.status === "PRESENT"
-                                            ? "bg-green-100 text-green-800"
-                                            : "bg-red-100 text-red-800"
-                                        }`}>
-                                        {record.status}
-                                      </span>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            value={employeeId}
+                            onChange={handleEmployeeIdChange}
+                            placeholder="Enter Employee ID"
+                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                          <button
+                            onClick={() => setIsCameraActive(!isCameraActive)}
+                            className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                            {isCameraActive ? "Stop Camera" : "Start Camera"}
+                          </button>
+                          <button
+                            onClick={handleDetectFaces}
+                            disabled={!isCameraActive}
+                            className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            Detect Faces
+                          </button>
+                        </div>
+                        {verificationStatus && (
+                          <div className={`p-4 rounded-lg border ${getVerificationStatusClass()}`}>
+                            {verificationMessage}
                           </div>
                         )}
                       </div>
-                    ))}
-                </div>
-              ) : (
-                <div className="text-center text-gray-500 py-8">
-                  Aucun historique de pointage trouvé
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+                    </div>
+                  )}
 
-        {activeView === "planning" && (
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold mb-4">Planning du Service</h3>
-            <div className="overflow-x-auto">
-              {planningLoading ? (
-                <div className="text-center text-gray-500 py-8">
-                  Chargement en cours...
+                  {getActiveMethod() === 'qrCode' && (
+                    <div className="bg-white p-6 rounded-xl shadow-md">
+                      <h3 className="text-lg font-semibold text-emerald-800 mb-4">QR Code Scanner</h3>
+                      <QrCodeGenerator />
+                    </div>
+                  )}
+
+                  {/* Manual Entry Section - Always visible */}
+                  <div className="bg-white p-6 rounded-xl shadow-md">
+                    <h3 className="text-lg font-semibold text-emerald-800 mb-4">Manual Entry</h3>
+                    <PointageManuel />
+                  </div>
                 </div>
-              ) : planningError ? (
-                <div className="text-center text-red-500 py-8">
-                  {planningError}
-                </div>
-              ) : planningData.length > 0 ? (
-                <table className="min-w-full bg-white">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Weekly Hours
-                      </th>
-                      <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Monthly Hours
-                      </th>
-                      <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Planning
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {planningData.map((planning) => {
-                      const planDetails = JSON.parse(planning.planJson || "{}");
 
-                      // Calculate working hours
-                      const weeklyHours =
-                        planDetails.days?.reduce((total, day) => {
-                          if (!day.isWorkDay) return total;
-                          const [fromH, fromM] = (day.from || "")
-                            .split(":")
-                            .map(Number) || [0, 0];
-                          const [toH, toM] = (day.to || "")
-                            .split(":")
-                            .map(Number) || [0, 0];
-                          return total + (toH - fromH) + (toM - fromM) / 60;
-                        }, 0) || 0;
-
-                      const monthlyHours = (weeklyHours * 4.333).toFixed(1);
-
-                      return (
-                        <tr key={planning.id}>
-                          <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
-                            {weeklyHours.toFixed(1)} hrs
-                          </td>
-                          <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
-                            {monthlyHours} hrs
-                          </td>
-                          <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
-                            {planDetails.name || "N/A"}
-                          </td>
+                {/* Attendance Records */}
+                <div className="mt-6 bg-white p-6 rounded-xl shadow-md">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-emerald-800">Today's Records</h3>
+                    <button
+                      onClick={handleSendReport}
+                      disabled={isSendingReport}
+                      className={`px-4 py-2 bg-emerald-600 text-white rounded-lg transition-colors ${
+                        isSendingReport ? "opacity-50 cursor-not-allowed" : "hover:bg-emerald-700"
+                      }`}>
+                      {isSendingReport ? "Sending..." : "Send Report to Chef"}
+                    </button>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-emerald-200">
+                          <th className="text-center p-2 text-emerald-800">Employee ID</th>
+                          <th className="text-center p-2 text-emerald-800">Name</th>
+                          <th className="text-center p-2 text-emerald-800">Time</th>
+                          <th className="text-center p-2 text-emerald-800">Status</th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="text-center text-gray-500 py-8">
-                  Aucun planning disponible pour votre service
+                      </thead>
+                      <tbody>
+                        {attendanceRecords.map((record, index) => (
+                          <tr key={index} className="border-b border-emerald-100 hover:bg-emerald-50">
+                            <td className="p-2 text-emerald-700 text-center">{record.employeeId}</td>
+                            <td className="p-2 text-emerald-700 text-center">{record.employeeName}</td>
+                            <td className="p-2 text-emerald-700 text-center">
+                              {new Date(record.timestamp).toLocaleTimeString()}
+                            </td>
+                            <td className="p-2 text-center">
+                              <span
+                                className={`px-2 py-1 rounded text-sm ${
+                                  record.status === "PRESENT"
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}>
+                                {record.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {activeView === "history" && (
+              <div>
+                <h2 className="text-2xl font-bold text-emerald-800 mb-6">Attendance History</h2>
+                <div className="bg-white p-6 rounded-xl shadow-md">
+                  {historyLoading ? (
+                    <div className="text-center py-4 text-emerald-600">Loading history...</div>
+                  ) : historyError ? (
+                    <div className="text-center py-4 text-red-500">{historyError}</div>
+                  ) : attendanceHistory.length > 0 ? (
+                    <div className="space-y-4">
+                      {Object.entries(
+                        attendanceHistory.reduce((acc, record) => {
+                          const date = new Date(record.timestamp).toLocaleDateString();
+                          if (!acc[date]) acc[date] = [];
+                          acc[date].push(record);
+                          return acc;
+                        }, {}),
+                      )
+                        .sort(([dateA], [dateB]) => new Date(dateB) - new Date(dateA))
+                        .map(([date, records]) => (
+                          <div key={date} className="border border-emerald-200 rounded-lg overflow-hidden">
+                            <div
+                              className="flex items-center justify-between p-4 bg-emerald-50 hover:bg-emerald-100 cursor-pointer"
+                              onClick={() =>
+                                setExpandedDates((prev) => ({
+                                  ...prev,
+                                  [date]: !prev[date],
+                                }))
+                              }>
+                              <div className="flex items-center gap-3">
+                                <span className="text-emerald-600 text-xl">📅</span>
+                                <div>
+                                  <h3 className="font-semibold text-emerald-800">{date}</h3>
+                                  <p className="text-sm text-emerald-600">
+                                    {records.length} record{records.length > 1 ? "s" : ""}
+                                  </p>
+                                </div>
+                              </div>
+                              <span
+                                className={`transform transition-transform ${
+                                  expandedDates[date] ? "rotate-90" : ""
+                                }`}>
+                                ▸
+                              </span>
+                            </div>
+
+                            {expandedDates[date] && (
+                              <div className="border-t border-emerald-200">
+                                <div className="overflow-x-auto">
+                                  <table className="w-full">
+                                    <thead>
+                                      <tr className="bg-emerald-50">
+                                        <th className="text-center p-2 text-emerald-800">Employee ID</th>
+                                        <th className="text-center p-2 text-emerald-800">Name</th>
+                                        <th className="text-center p-2 text-emerald-800">Time</th>
+                                        <th className="text-center p-2 text-emerald-800">Status</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {records.map((record, index) => (
+                                        <tr
+                                          key={index}
+                                          className="border-b border-emerald-100 hover:bg-emerald-50">
+                                          <td className="p-2 text-emerald-700 text-center">{record.employeeId}</td>
+                                          <td className="p-2 text-emerald-700 text-center">{record.employeeName}</td>
+                                          <td className="p-2 text-emerald-700 text-center">
+                                            {new Date(record.timestamp).toLocaleTimeString()}
+                                          </td>
+                                          <td className="p-2 text-center">
+                                            <span
+                                              className={`px-2 py-1 rounded text-sm ${
+                                                record.status === "PRESENT"
+                                                  ? "bg-emerald-100 text-emerald-800"
+                                                  : "bg-red-100 text-red-800"
+                                              }`}>
+                                              {record.status}
+                                            </span>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-emerald-600">No attendance history found</div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeView === "profile" && manager && <ProfileView employee={manager} />}
+            {activeView === "editProfile" && manager && (
+              <EditProfileView employee={manager} setEmployee={setManager} />
+            )}
           </div>
-        )}
-
-        {activeView === "profile" && manager && (
-          <ProfileView employee={manager} />
-        )}
-
-        {activeView === "editProfile" && manager && (
-          <EditProfileView employee={manager} setEmployee={setManager} />
         )}
       </div>
     </div>
