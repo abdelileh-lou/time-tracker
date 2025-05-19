@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { Monitor, CalendarClock, Users, Settings, LogOut } from "lucide-react";
+import { useSnackbar } from 'notistack';
 import {
   loadModels,
   detectFaces,
 } from "../../FacialRecognition/facialRecognition";
 
 const Admin = () => {
+  const { enqueueSnackbar } = useSnackbar();
   // State declarations
   const [activeSection, setActiveSection] = useState("dashboard");
   const [employees, setEmployees] = useState([]);
@@ -176,10 +178,22 @@ const Admin = () => {
       ];
 
       setSavedConfiguration(configSummary);
-      alert("Configuration sauvegardée avec succès!");
+      enqueueSnackbar("Configuration sauvegardée avec succès!", {
+        variant: 'success',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     } catch (error) {
       console.error("Error saving methods:", error);
-      alert("Échec de l'enregistrement de la configuration.");
+      enqueueSnackbar("Échec de l'enregistrement de la configuration.", {
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     } finally {
       setLoading(false);
     }
@@ -281,10 +295,22 @@ const Admin = () => {
       setFacialData(null);
       setShowFacialRecognition(false);
 
-      alert("Employé ajouté avec succès!");
+      enqueueSnackbar("Employé ajouté avec succès!", {
+        variant: 'success',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     } catch (error) {
       console.error("Error adding employee:", error);
-      alert("Échec de l'ajout de l'employé.");
+      enqueueSnackbar("Échec de l'ajout de l'employé.", {
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     }
   };
 
@@ -292,10 +318,22 @@ const Admin = () => {
     try {
       await axios.delete(`http://localhost:8092/api/employee/${id}`);
       setEmployees(employees.filter((employee) => employee.id !== id));
-      alert("Employé supprimé avec succès!");
+      enqueueSnackbar("Employé supprimé avec succès!", {
+        variant: 'success',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     } catch (error) {
       console.error("Error deleting employee:", error);
-      alert("Échec de la suppression de l'employé.");
+      enqueueSnackbar("Échec de la suppression de l'employé.", {
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     }
   };
 
