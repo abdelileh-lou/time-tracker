@@ -40,7 +40,8 @@ const ManagerDashboard = () => {
   const [expandedDates, setExpandedDates] = useState({});
   const [attendanceMethods, setAttendanceMethods] = useState({
     qrCode: { active: true, priority: 1 },
-    facialRecognition: { active: true, priority: 2 }
+    facialRecognition: { active: true, priority: 2 },
+    pinCode: { active: true, priority: 3 }
   });
   const [pinAttendance, setPinAttendance] = useState({
     employeeId: "",
@@ -429,6 +430,11 @@ const ManagerDashboard = () => {
     }
   };
 
+  const shouldShowPinCode = () => {
+    const pinCodeConfig = attendanceMethods.pinCode;
+    return pinCodeConfig && pinCodeConfig.active && pinCodeConfig.priority === 1;
+  };
+
   return (
     <div className="flex h-screen bg-emerald-50">
       {/* Sidebar */}
@@ -528,11 +534,11 @@ const ManagerDashboard = () => {
               <div>
                 <h2 className="text-2xl font-bold text-emerald-800 mb-6">Attendance Management</h2>
                 <div className="grid grid-cols-1 gap-6">
-                  {/* PIN Code Attendance Section */}
-                  <div className="bg-white p-6 rounded-xl shadow-md">
-                    <h3 className="text-lg font-semibold text-emerald-800 mb-4">PIN Code Attendance</h3>
-                    <form onSubmit={handlePinAttendance} className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* PIN Code Attendance Section - Only show if it's the primary method */}
+                  {shouldShowPinCode() && (
+                    <div className="bg-white p-6 rounded-xl shadow-md">
+                      <h3 className="text-lg font-semibold text-emerald-800 mb-4">PIN Code Attendance</h3>
+                      <form onSubmit={handlePinAttendance} className="space-y-4">
                         <div>
                           <label htmlFor="employeeId" className="block text-sm font-medium text-emerald-700 mb-1">
                             Employee ID
@@ -559,24 +565,24 @@ const ManagerDashboard = () => {
                             placeholder="Enter PIN Code"
                           />
                         </div>
-                      </div>
-                      <button
-                        type="submit"
-                        className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
-                        Record Attendance
-                      </button>
+                        <button
+                          type="submit"
+                          className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                          Record Attendance
+                        </button>
+                      </form>
                       {pinError && (
-                        <div className="p-3 bg-red-100 text-red-700 rounded-lg border border-red-200">
+                        <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg">
                           {pinError}
                         </div>
                       )}
                       {pinSuccess && (
-                        <div className="p-3 bg-emerald-100 text-emerald-700 rounded-lg border border-emerald-200">
+                        <div className="mt-4 p-3 bg-green-100 text-green-700 rounded-lg">
                           {pinSuccess}
                         </div>
                       )}
-                    </form>
-                  </div>
+                    </div>
+                  )}
 
                   {/* Show only the highest priority method */}
                   {getActiveMethod() === 'facialRecognition' && (
