@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { jsPDF } from "jspdf";
-import "jspdf-autotable";
+import autoTable from 'jspdf-autotable';
 import { enqueueSnackbar } from "notistack";
 
 const PointageManuel = () => {
@@ -125,32 +125,77 @@ const PointageManuel = () => {
   };
 
   const exportToPDF = () => {
-    const doc = new jsPDF();
+    try {
+      const doc = new jsPDF();
+      const today = new Date().toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
 
-    // Add title
-    doc.setFontSize(18);
-    doc.text("Pointages du jour", 14, 22);
+      // Add title and date
+      doc.setFontSize(16);
+      doc.text("Rapport de Pointage", 14, 15);
+      doc.setFontSize(12);
+      doc.text(`Date: ${today}`, 14, 25);
 
-    // Create the table
-    const tableColumn = ["ID", "Nom", "Heure", "Statut", "Signalé au Chef"];
-    const tableRows = attendanceRecords.map((record) => [
-      record.employeeId,
-      record.employeeName,
-      new Date(record.timestamp).toLocaleTimeString(),
-      translateStatus(record.status),
-      record.reportedChef ? "Oui" : "Non",
-    ]);
+      // Prepare table data
+      const tableData = attendanceRecords.map(record => [
+        record.employeeId,
+        record.employeeName,
+        new Date(record.timestamp).toLocaleTimeString('fr-FR'),
+        translateStatus(record.status),
+        record.reportedChef ? "Oui" : "Non"
+      ]);
 
-    doc.autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 30,
-      styles: { fontSize: 12, cellPadding: 3 },
-      headStyles: { fillColor: [66, 135, 245] },
-    });
+      // Add table using autoTable
+      autoTable(doc, {
+        startY: 35,
+        head: [['ID Employé', 'Nom', 'Heure', 'Statut', 'Signalé au Chef']],
+        body: tableData,
+        theme: 'grid',
+        styles: {
+          fontSize: 10,
+          cellPadding: 3,
+        },
+        headStyles: {
+          fillColor: [41, 128, 185],
+          textColor: 255,
+          fontSize: 11,
+          fontStyle: 'bold',
+        },
+      });
 
-    // Export the PDF
-    doc.save(`pointages-${new Date().toISOString().split("T")[0]}.pdf`);
+      // Save the PDF
+      doc.save(`pointage_${today.replace(/\//g, '-')}.pdf`);
+      
+      enqueueSnackbar("PDF exporté avec succès!", {
+        variant: 'success',
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      enqueueSnackbar("Erreur lors de l'exportation du PDF", {
+        variant: 'error',
+      });
+    }
+  };
+
+  const handleDeleteRecord = async (id) => {
+    try {
+      await axios.delete(`http://localhost:8092/api/attendance/record/${id}`);
+      
+      // Update the attendance records list after successful deletion
+      setAttendanceRecords(prevRecords => prevRecords.filter(record => record.id !== id));
+      
+      enqueueSnackbar("Pointage supprimé avec succès!", {
+        variant: 'success',
+      });
+    } catch (error) {
+      console.error("Error deleting attendance record:", error);
+      enqueueSnackbar("Erreur lors de la suppression du pointage", {
+        variant: 'error',
+      });
+    }
   };
 
   // Translate status codes to French for display
@@ -288,20 +333,15 @@ const PointageManuel = () => {
                   <th className="py-3 px-4 border-b text-left">Nom</th>
                   <th className="py-3 px-4 border-b text-left">Heure</th>
                   <th className="py-3 px-4 border-b text-left">Statut</th>
-                  <th className="py-3 px-4 border-b text-left">
-                    Signalé au Chef
-                  </th>
+                  <th className="py-3 px-4 border-b text-left">Signalé au Chef</th>
+                  <th className="py-3 px-4 border-b text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {attendanceRecords.map((record, index) => (
-                  <tr
-                    key={index}
-                    className={index % 2 === 0 ? "bg-gray-50" : ""}>
+                  <tr key={index} className={index % 2 === 0 ? "bg-gray-50" : ""}>
                     <td className="py-2 px-4 border-b">{record.employeeId}</td>
-                    <td className="py-2 px-4 border-b">
-                      {record.employeeName}
-                    </td>
+                    <td className="py-2 px-4 border-b">{record.employeeName}</td>
                     <td className="py-2 px-4 border-b">
                       {new Date(record.timestamp).toLocaleTimeString()}
                     </td>
@@ -310,6 +350,24 @@ const PointageManuel = () => {
                     </td>
                     <td className="py-2 px-4 border-b">
                       {record.reportedChef ? "Oui" : "Non"}
+                    </td>
+                    <td className="py-2 px-4 border-b">
+                      <button
+                        onClick={() => handleDeleteRecord(record.id)}
+                        className="text-red-600 hover:text-red-800 focus:outline-none"
+                        title="Supprimer le pointage">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          viewBox="0 0 20 20"
+                          fill="currentColor">
+                          <path
+                            fillRule="evenodd"
+                            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
                     </td>
                   </tr>
                 ))}

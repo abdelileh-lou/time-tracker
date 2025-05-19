@@ -259,7 +259,7 @@ const ChefServiceDashboard = () => {
             <Monitor size="2rem" className="text-emerald-600" />
             <CalendarClock size="2rem" className="text-emerald-600" />
           </div>
-          <h1 className="text-2xl font-bold text-emerald-800">Espace Chef Service</h1>
+          <h1 className="text-2xl font-bold text-emerald-800">Chef Service</h1>
           <p className="text-sm text-emerald-600">NTIC Management</p>
         </div>
 
@@ -335,7 +335,7 @@ const ChefServiceDashboard = () => {
         <div className="absolute bottom-4 left-4 right-4">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-all duration-300">
+            className="w-50 flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-all duration-300">
             <LogOut size={20} />
             <span>Logout</span>
           </button>
