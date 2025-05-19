@@ -390,43 +390,85 @@ const ManagerDashboard = () => {
     setPinError("");
     setPinSuccess("");
 
-    if (!pinAttendance.employeeId || !pinAttendance.pinCode) {
-      setPinError("Please fill in all fields");
+    if (!pinAttendance.employeeId) {
+      setPinError("Please enter Employee ID first");
+      return;
+    }
+
+    if (!pinAttendance.pinCode) {
+      setPinError("Please enter PIN code");
       return;
     }
 
     try {
-      // First verify the PIN
-      const verifyResponse = await axios.post("http://localhost:8092/api/employee/verify-pin", {
-        employeeId: pinAttendance.employeeId,
-        pinCode: pinAttendance.pinCode
+      // Fetch the employee's PIN code from the database
+      const response = await axios.get(
+        `http://localhost:8092/api/employee/${pinAttendance.employeeId}/code-pin`
+      );
+      console.log("Response from server:", response.data);
+      console.log("Response type:", typeof response.data);
+      console.log("Entered PIN:", pinAttendance.pinCode);
+      console.log("Entered PIN type:", typeof pinAttendance.pinCode);
+
+      // Check if response data exists and has the expected structure
+      if (!response.data) {
+        setPinError("No data received from server");
+        return;
+      }
+
+      // Convert both values to strings for comparison
+      const enteredPin = String(pinAttendance.pinCode).trim();
+      const storedPin = String(response.data).trim();
+      
+      console.log("Comparison details:", {
+        enteredPin,
+        storedPin,
+        areEqual: enteredPin === storedPin,
+        enteredLength: enteredPin.length,
+        storedLength: storedPin.length
       });
 
-      if (verifyResponse.data.verified) {
-        // If PIN is correct, record attendance
-        const attendanceResponse = await axios.post(
-          "http://localhost:8092/api/attendance/record",
-          {
-            employeeId: parseInt(pinAttendance.employeeId),
-            timestamp: new Date().toISOString(),
-            status: "PRESENT",
-          }
-        );
+      // Compare the entered PIN with the PIN from the database
+      const isPinValid = enteredPin === storedPin;
 
-        if (attendanceResponse.data) {
-          setAttendanceRecords((prevRecords) => [
-            ...prevRecords,
-            attendanceResponse.data,
-          ]);
-          setPinSuccess("Attendance recorded successfully!");
-          setPinAttendance({ employeeId: "", pinCode: "" }); // Reset form
+      if (isPinValid) {
+        setPinSuccess("Verification successful!");
+
+        try {
+          const attendanceResponse = await axios.post(
+            "http://localhost:8092/api/attendance/record",
+            {
+              employeeId: parseInt(pinAttendance.employeeId),
+              timestamp: new Date().toISOString(),
+              status: "PRESENT",
+            }
+          );
+
+          if (attendanceResponse.data) {
+            setAttendanceRecords((prevRecords) => [
+              ...prevRecords,
+              attendanceResponse.data,
+            ]);
+            // Clear the form after successful verification
+            setPinAttendance({ employeeId: "", pinCode: "" });
+          }
+        } catch (error) {
+          console.error("Recording error:", error);
+          setPinError(
+            "Failed to record attendance: " +
+            (error.response?.data?.message || error.message)
+          );
         }
       } else {
-        setPinError("Invalid PIN code");
+        setPinError("Verification failed - PIN code mismatch. Please try again.");
       }
     } catch (error) {
-      console.error("Error recording PIN attendance:", error);
-      setPinError(error.response?.data?.message || "Error recording attendance");
+      console.error("Verification error:", error);
+      if (error.response?.status === 404) {
+        setPinError("No registered PIN code for this employee");
+      } else {
+        setPinError("Error processing verification. Please try again.");
+      }
     }
   };
 
