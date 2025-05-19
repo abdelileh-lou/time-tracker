@@ -1,0 +1,69 @@
+// ChefProfileView.jsx
+import React from "react";
+import { User } from "lucide-react";
+
+const ChefProfileView = ({ chef }) => {
+  if (!chef) return <div>No profile data available</div>;
+
+  const passwordDots = "•".repeat(12);
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <h2 className="text-2xl font-bold mb-6">Mon Profil</h2>
+
+      <div className="space-y-6">
+        <div className="flex items-center">
+          <div className="bg-gray-200 rounded-full p-6">
+            <User size={48} />
+          </div>
+          <div className="ml-4">
+            <h3 className="text-xl font-semibold">{chef.name}</h3>
+            <p className="text-gray-600">{chef.username}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="text-sm font-medium text-gray-500 uppercase mb-2">
+              Account Information
+            </h4>
+            <div className="bg-gray-50 p-4 rounded border border-gray-200">
+              <div className="mb-3">
+                <p className="text-sm text-gray-500">Username</p>
+                <p className="font-medium">{chef.username}</p>
+              </div>
+              <div className="mb-3">
+                <p className="text-sm text-gray-500">Email</p>
+                <p className="font-medium">{chef.email}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Service</p>
+                <p className="font-medium">
+                  {chef.service?.name || "Not specified"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-medium text-gray-500 uppercase mb-2">
+              Security
+            </h4>
+            <div className="bg-gray-50 p-4 rounded border border-gray-200">
+              <div className="mb-3">
+                <p className="text-sm text-gray-500">Password</p>
+                <p className="font-medium">{passwordDots}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">User ID</p>
+                <p className="font-medium">{chef.id}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ChefProfileView;

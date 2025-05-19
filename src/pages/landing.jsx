@@ -7,6 +7,8 @@ import AutoTrackerView from "../components/AutoTrackerView ";
 import TimerSection from "../components/TimerSection ";
 import FeatureOption from "../components/FeatureOption ";
 
+import Hero from "../components/Hero";
+
 const Landing = () => {
   // const [activeTimer, setActiveTimer] = useState(false);
   const [seconds, setSeconds] = useState(1);
@@ -71,6 +73,7 @@ const Landing = () => {
 
   return (
     <>
+      <Hero />
       <div className="w-auto flex flex-col items-center justify-center py-[85px]">
         <h1 className="font-black text-[38px]">Time management features</h1>
         <p className="pt-10 text-lg">

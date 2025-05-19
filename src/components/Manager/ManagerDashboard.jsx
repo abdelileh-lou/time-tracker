@@ -1,513 +1,26 @@
-// import React, { useState, useEffect } from "react";
-// import axios from "axios";
-// import Facile from "./Facile";
-// import QrCodeGenerator from "./QrCodeGenerator"; // Import QrCodeGenerator component
-// import PointageManuel from "./PointageManuel";
-// import ProfileView from "../Employee/ProfileView";
-// import EditProfileView from "../Employee/EditProfileView";
-// import {
-//   loadModels,
-//   detectFaces,
-//   compareFaces,
-// } from "../../FacialRecognition/facialRecognition";
-// import { getUserData, logout } from "../../Auth/auth"; // Import the auth utilities
-
-// const ManagerDashboard = () => {
-//   // States
-//   const [attendanceRecords, setAttendanceRecords] = useState([]);
-//   const [activeView, setActiveView] = useState("attendance");
-//   const [loading, setLoading] = useState(true);
-//   const [employeeId, setEmployeeId] = useState("");
-//   const [verificationStatus, setVerificationStatus] = useState(null);
-//   const [verificationMessage, setVerificationMessage] = useState("");
-//   const [storedFacialData, setStoredFacialData] = useState(null);
-//   const [isSendingReport, setIsSendingReport] = useState(false);
-//   const [manager, setManager] = useState(null);
-//   // Add this state at the top of ManagerDashboard
-//   const [primaryMethod, setPrimaryMethod] = useState("facial");
-
-//   // Get manager data from localStorage instead of API
-//   useEffect(() => {
-//     const currentManager = getUserData();
-//     if (!currentManager) {
-//       navigate("/login");
-//       return;
-//     }
-//     setManager(currentManager);
-//     setLoading(false);
-//   }, []);
-
-//   // Add this useEffect to fetch the active method
-//   useEffect(() => {
-//     const fetchActiveMethod = async () => {
-//       try {
-//         const response = await axios.get(
-//           "http://localhost:8092/api/attendance-methods",
-//         );
-//         const methods = response.data;
-//         setPrimaryMethod(methods.qrCode.priority === 1 ? "qr" : "facial");
-//       } catch (error) {
-//         console.error("Error fetching active method:", error);
-//       }
-//     };
-//     fetchActiveMethod();
-//   }, []);
-
-//   // Fetch attendance records - all records without department filtering
-//   useEffect(() => {
-//     const fetchAttendanceRecords = async () => {
-//       try {
-//         setLoading(true);
-//         const response = await axios.get(
-//           `http://localhost:8092/api/attendance/record/today`,
-//         );
-//         console.log("Fetched attendance records:", response.data);
-//         setAttendanceRecords(response.data);
-//       } catch (error) {
-//         console.error("Error fetching attendance records:", error);
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchAttendanceRecords();
-//     const intervalId = setInterval(fetchAttendanceRecords, 5 * 60 * 1000);
-//     return () => clearInterval(intervalId);
-//   }, []);
-
-//   // Fetch facial data for employee ID
-//   useEffect(() => {
-//     const fetchFacialData = async () => {
-//       if (!employeeId) {
-//         setStoredFacialData(null);
-//         return;
-//       }
-
-//       try {
-//         const response = await axios.get(
-//           `http://localhost:8092/api/employee/${employeeId}/facial-data`,
-//         );
-
-//         console.log("Fetched facial data:", response.data);
-//         setStoredFacialData(response.data);
-//       } catch (error) {
-//         console.error("Error fetching facial data:", error);
-//         setStoredFacialData(null);
-//         setVerificationStatus("error");
-//         setVerificationMessage("No facial data found for this employee");
-//       }
-//     };
-
-//     fetchFacialData();
-//   }, [employeeId]);
-
-//   // Handle facial data capture and attendance recording
-//   const handleFacialDataCapture = async (liveDescriptor) => {
-//     if (!employeeId) {
-//       setVerificationStatus("error");
-//       setVerificationMessage("Please enter Employee ID first");
-//       return;
-//     }
-
-//     if (!storedFacialData) {
-//       setVerificationStatus("error");
-//       setVerificationMessage("No registered facial data for this employee");
-//       return;
-//     }
-
-//     setVerificationStatus("pending");
-//     setVerificationMessage("Verifying face...");
-
-//     try {
-//       const liveArray = Array.from(liveDescriptor);
-//       const storedDescriptor = storedFacialData[0].descriptor;
-
-//       // compareFaces should return a similarity score (0.0 - 1.0)
-//       const similarity = compareFaces(liveArray, storedDescriptor);
-
-//       if (similarity > 0.8) {
-//         setVerificationStatus("success");
-//         setVerificationMessage("Verification successful!");
-
-//         try {
-//           // Create attendance record that properly links to Employee entity
-//           const response = await axios.post(
-//             "http://localhost:8092/api/attendance/record",
-//             {
-//               employeeId: parseInt(employeeId),
-//               timestamp: new Date().toISOString(),
-//               status: "PRESENT",
-//             },
-//           );
-
-//           // Add the new record to the existing records instead of fetching all again
-//           if (response.data) {
-//             setAttendanceRecords((prevRecords) => [
-//               ...prevRecords,
-//               response.data,
-//             ]);
-//           }
-//         } catch (error) {
-//           console.error("Recording error:", error);
-//           setVerificationStatus("error");
-//           setVerificationMessage(
-//             "Failed to record attendance: " +
-//               (error.response?.data?.message || error.message),
-//           );
-//         }
-//       } else {
-//         setVerificationStatus("error");
-//         setVerificationMessage("Verification failed - Face mismatch");
-//       }
-//     } catch (error) {
-//       console.error("Verification error:", error);
-//       setVerificationStatus("error");
-//       setVerificationMessage("Error processing verification");
-//     }
-//   };
-
-//   // Handle employee ID change
-//   const handleEmployeeIdChange = (e) => {
-//     setEmployeeId(e.target.value);
-//     // Reset verification status when ID changes
-//     setVerificationStatus(null);
-//     setVerificationMessage("");
-//   };
-
-//   // Handle sending report to chef service
-//   const handleSendReport = async () => {
-//     if (attendanceRecords.length === 0) {
-//       alert("No attendance records to report");
-//       return;
-//     }
-
-//     try {
-//       setIsSendingReport(true);
-//       await axios.post("http://localhost:8092/api/attendance/report-to-chef", {
-//         date: new Date().toISOString(),
-//         records: attendanceRecords,
-//         reportedChef: true,
-//       });
-
-//       // Mark all records as reported in the UI
-//       setAttendanceRecords((records) =>
-//         records.map((record) => ({ ...record, reportedChef: true })),
-//       );
-
-//       alert("Report sent successfully to chef service!");
-//     } catch (error) {
-//       console.error("Error sending report:", error);
-//       alert("Error sending report. Please try again.");
-//     } finally {
-//       setIsSendingReport(false);
-//     }
-//   };
-
-//   // Handle logout
-//   const handleLogout = () => {
-//     logout();
-//     navigate("/login");
-//   };
-
-//   // Get verification status class
-//   const getVerificationStatusClass = () => {
-//     switch (verificationStatus) {
-//       case "success":
-//         return "bg-green-100 text-green-700 border-green-300";
-//       case "error":
-//         return "bg-red-100 text-red-700 border-red-300";
-//       case "pending":
-//         return "bg-yellow-100 text-yellow-700 border-yellow-300";
-//       default:
-//         return "hidden";
-//     }
-//   };
-
-//   return (
-//     <div className="flex flex-col h-screen bg-gray-100">
-//       <header className="bg-white shadow-md px-6 py-4 flex justify-between items-center">
-//         <h1 className="text-2xl font-semibold text-gray-800">
-//           Tableau de bord
-//         </h1>
-//         <button
-//           onClick={handleLogout}
-//           className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-//           Déconnexion
-//         </button>
-//       </header>
-
-//       <div className="flex-1 p-6">
-//         {/* Navigation Tabs */}
-//         <div className="mb-6 border-b">
-//           <div className="flex space-x-4">
-//             <button
-//               className={`py-2 px-4 ${
-//                 activeView === "attendance"
-//                   ? "border-b-2 border-blue-500 text-blue-600"
-//                   : "text-gray-600 hover:text-blue-500"
-//               }`}
-//               onClick={() => setActiveView("attendance")}>
-//               Pointage en temps réel
-//             </button>
-//             <button
-//               className={`py-2 px-4 ${
-//                 activeView === "manual"
-//                   ? "border-b-2 border-blue-500 text-blue-600"
-//                   : "text-gray-600 hover:text-blue-500"
-//               }`}
-//               onClick={() => setActiveView("manual")}>
-//               Pointage Manuel
-//             </button>
-//             <button
-//               className={`py-2 px-4 ${
-//                 activeView === "history"
-//                   ? "border-b-2 border-blue-500 text-blue-600"
-//                   : "text-gray-600 hover:text-blue-500"
-//               }`}
-//               onClick={() => setActiveView("history")}>
-//               Historique
-//             </button>
-//             <button
-//               className={`py-2 px-4 ${
-//                 activeView === "planning"
-//                   ? "border-b-2 border-blue-500 text-blue-600"
-//                   : "text-gray-600 hover:text-blue-500"
-//               }`}
-//               onClick={() => setActiveView("planning")}>
-//               Planning
-//             </button>
-//             <button
-//               className={`py-2 px-4 ${
-//                 activeView === "profile"
-//                   ? "border-b-2 border-blue-500 text-blue-600"
-//                   : "text-gray-600 hover:text-blue-500"
-//               }`}
-//               onClick={() => setActiveView("profile")}>
-//               Consulter Profile
-//             </button>
-//             <button
-//               className={`py-2 px-4 ${
-//                 activeView === "editProfile"
-//                   ? "border-b-2 border-blue-500 text-blue-600"
-//                   : "text-gray-600 hover:text-blue-500"
-//               }`}
-//               onClick={() => setActiveView("editProfile")}>
-//               Gérer Profile
-//             </button>
-//           </div>
-//         </div>
-
-//         {/* Attendance View */}
-//         {activeView === "attendance" && (
-//           <div className="space-y-6">
-//             {/* Main Attendance Section */}
-//             <div className="grid grid-cols-12 gap-6">
-//               {/* Left Side - Employee ID Input */}
-//               <div className="col-span-3 bg-white p-4 rounded-lg shadow-md">
-//                 <h3 className="text-lg font-semibold mb-4">Vérification</h3>
-//                 <div className="space-y-4">
-//                   <div>
-//                     <label className="block text-sm font-medium text-gray-700 mb-1">
-//                       ID Employé
-//                     </label>
-//                     <input
-//                       type="text"
-//                       value={employeeId}
-//                       onChange={handleEmployeeIdChange}
-//                       className="w-full p-2 border border-gray-300 rounded-md text-sm"
-//                       placeholder="Entrez l'ID"
-//                     />
-//                   </div>
-
-//                   {/* Verification Status Message */}
-//                   {verificationStatus && (
-//                     <div
-//                       className={`p-3 border rounded-md mt-4 ${getVerificationStatusClass()}`}>
-//                       {verificationMessage}
-//                     </div>
-//                   )}
-//                 </div>
-//               </div>
-
-//               {/* Center - QR Code or Facial Recognition */}
-//               <div className="col-span-6">
-//                 {primaryMethod === "qr" ? (
-//                   <QrCodeGenerator />
-//                 ) : (
-//                   <div className="bg-white p-4 rounded-lg shadow-md">
-//                     <h3 className="text-lg font-semibold mb-4 text-center">
-//                       Capture Faciale
-//                     </h3>
-//                     <div className="flex justify-center">
-//                       <Facile onCapture={handleFacialDataCapture} />
-//                     </div>
-//                   </div>
-//                 )}
-//               </div>
-
-//               {/* Right Side - Quick Stats */}
-//               <div className="col-span-3 bg-white p-4 rounded-lg shadow-md">
-//                 <h3 className="text-lg font-semibold mb-4">Statistiques</h3>
-//                 <div className="space-y-4">
-//                   <div>
-//                     <p className="text-sm text-gray-500">
-//                       Pointages aujourd'hui
-//                     </p>
-//                     <p className="text-2xl font-bold text-blue-600">
-//                       {attendanceRecords.length}
-//                     </p>
-//                   </div>
-//                   <button
-//                     onClick={handleSendReport}
-//                     disabled={isSendingReport || attendanceRecords.length === 0}
-//                     className={`w-full px-4 py-2 text-white rounded-md text-sm ${
-//                       isSendingReport || attendanceRecords.length === 0
-//                         ? "bg-gray-400 cursor-not-allowed"
-//                         : "bg-green-600 hover:bg-green-700"
-//                     }`}>
-//                     {isSendingReport
-//                       ? "Envoi en cours..."
-//                       : "Envoyer au Chef de Service"}
-//                   </button>
-//                 </div>
-//               </div>
-//             </div>
-
-//             {/* Attendance Records Table */}
-//             <div className="bg-white p-6 rounded-lg shadow-md">
-//               <div className="flex justify-between items-center mb-4">
-//                 <h3 className="text-lg font-semibold">Pointages du jour</h3>
-//                 <div className="flex space-x-2">
-//                   <button className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
-//                     Exporter PDF
-//                   </button>
-//                 </div>
-//               </div>
-
-//               <div className="overflow-x-auto">
-//                 <table className="min-w-full bg-white">
-//                   <thead className="bg-gray-50">
-//                     <tr>
-//                       <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-//                         ID
-//                       </th>
-//                       <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-//                         Nom
-//                       </th>
-//                       <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-//                         Heure
-//                       </th>
-//                       <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-//                         Statut
-//                       </th>
-//                     </tr>
-//                   </thead>
-//                   <tbody className="divide-y divide-gray-200">
-//                     {loading ? (
-//                       <tr>
-//                         <td
-//                           colSpan="4"
-//                           className="py-4 text-center text-gray-500">
-//                           Chargement...
-//                         </td>
-//                       </tr>
-//                     ) : attendanceRecords.length > 0 ? (
-//                       attendanceRecords.map((record, index) => (
-//                         <tr key={index}>
-//                           <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
-//                             {record.employeeId}
-//                           </td>
-//                           <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
-//                             {record.employeeName}
-//                           </td>
-//                           <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
-//                             {new Date(record.timestamp).toLocaleTimeString()}
-//                           </td>
-//                           <td className="py-2 px-3 whitespace-nowrap text-sm">
-//                             <span
-//                               className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-//                                 record.reportedChef
-//                                   ? "bg-blue-100 text-blue-800"
-//                                   : "bg-green-100 text-green-800"
-//                               }`}>
-//                               {record.status}
-//                               {record.reportedChef && " ✓"}
-//                             </span>
-//                           </td>
-//                         </tr>
-//                       ))
-//                     ) : (
-//                       <tr>
-//                         <td
-//                           colSpan="4"
-//                           className="py-4 text-center text-gray-500">
-//                           Aucun pointage enregistré aujourd'hui
-//                         </td>
-//                       </tr>
-//                     )}
-//                   </tbody>
-//                 </table>
-//               </div>
-//             </div>
-//           </div>
-//         )}
-
-//         {/* Manual Attendance View */}
-//         {activeView === "manual" && <PointageManuel />}
-
-//         {/* History View */}
-//         {activeView === "history" && (
-//           <div className="bg-white p-6 rounded-lg shadow-md">
-//             <h3 className="text-lg font-semibold mb-4">
-//               Historique des pointages
-//             </h3>
-//             <div className="text-center text-gray-500 py-8">
-//               Cette fonctionnalité sera disponible prochainement
-//             </div>
-//           </div>
-//         )}
-
-//         {/* Planning View */}
-//         {activeView === "planning" && (
-//           <div className="bg-white p-6 rounded-lg shadow-md">
-//             <h3 className="text-lg font-semibold mb-4">Planning</h3>
-//             <div className="text-center text-gray-500 py-8">
-//               Cette fonctionnalité sera disponible prochainement
-//             </div>
-//           </div>
-//         )}
-
-//         {/* Profile View */}
-//         {activeView === "profile" && manager && (
-//           <ProfileView employee={manager} />
-//         )}
-
-//         {/* Edit Profile View */}
-//         {activeView === "editProfile" && manager && (
-//           <EditProfileView employee={manager} setEmployee={setManager} />
-//         )}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default ManagerDashboard;
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import Facile from "./Facile";
-import QrCodeGenerator from "./QrCodeGenerator"; // Import QrCodeGenerator component
+import QrCodeGenerator from "./QrCodeGenerator";
 import PointageManuel from "./PointageManuel";
 import ProfileView from "../Employee/ProfileView";
 import EditProfileView from "../Employee/EditProfileView";
+import { Monitor, CalendarClock, Users, Settings, LogOut, ClipboardList, History, User } from "lucide-react";
+import { useSnackbar } from 'notistack';
 import {
   loadModels,
   detectFaces,
   compareFaces,
 } from "../../FacialRecognition/facialRecognition";
-import { getUserData, logout } from "../../Auth/auth"; // Import the auth utilities
+import { getUserData, logout } from "../../Auth/auth";
 
 const ManagerDashboard = () => {
+  const { enqueueSnackbar } = useSnackbar();
+  // Add missing refs
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
+
   // States
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [activeView, setActiveView] = useState("attendance");
@@ -517,24 +30,106 @@ const ManagerDashboard = () => {
   const [verificationMessage, setVerificationMessage] = useState("");
   const [storedFacialData, setStoredFacialData] = useState(null);
   const [isSendingReport, setIsSendingReport] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationMessage, setConfirmationMessage] = useState("");
+  const [confirmationType, setConfirmationType] = useState(""); // 'success' or 'error'
   const [manager, setManager] = useState(null);
-  // Add this state at the top of ManagerDashboard
   const [primaryMethod, setPrimaryMethod] = useState("facial");
-  // Add state to control camera activation
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [planningData, setPlanningData] = useState([]);
+  const [planningLoading, setPlanningLoading] = useState(false);
+  const [planningError, setPlanningError] = useState(null);
+  const [attendanceHistory, setAttendanceHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState(null);
+  const [expandedDates, setExpandedDates] = useState({});
+  const [attendanceMethods, setAttendanceMethods] = useState({
+    qrCode: { active: true, priority: 1 },
+    facialRecognition: { active: true, priority: 2 },
+    pinCode: { active: true, priority: 3 }
+  });
+  const [pinAttendance, setPinAttendance] = useState({
+    employeeId: "",
+    pinCode: ""
+  });
+  const [pinError, setPinError] = useState("");
+  const [pinSuccess, setPinSuccess] = useState("");
 
-  // Get manager data from localStorage instead of API
+  // Initialize facial recognition models
+  useEffect(() => {
+    const initializeFacialRecognition = async () => {
+      try {
+        await loadModels();
+        console.log("Facial recognition models loaded successfully");
+      } catch (error) {
+        console.error("Error loading facial recognition models:", error);
+      }
+    };
+
+    initializeFacialRecognition();
+  }, []);
+
+  // Handle camera stream
+  useEffect(() => {
+    const setupCamera = async () => {
+      if (isCameraActive && videoRef.current) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+              width: 640,
+              height: 480,
+              facingMode: "user"
+            } 
+          });
+          videoRef.current.srcObject = stream;
+          streamRef.current = stream;
+        } catch (error) {
+          console.error("Error accessing camera:", error);
+          setIsCameraActive(false);
+        }
+      } else if (!isCameraActive && streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        if (videoRef.current) {
+          videoRef.current.srcObject = null;
+        }
+      }
+    };
+
+    setupCamera();
+  }, [isCameraActive]);
+
+  useEffect(() => {
+    const fetchAttendanceHistory = async () => {
+      if (activeView === "history") {
+        try {
+          setHistoryLoading(true);
+          setHistoryError(null);
+          const response = await axios.get(
+            "http://localhost:8092/api/attendance/history",
+          );
+          setAttendanceHistory(response.data);
+        } catch (error) {
+          console.error("Error fetching attendance history:", error);
+          setHistoryError("Failed to load attendance history");
+        } finally {
+          setHistoryLoading(false);
+        }
+      }
+    };
+
+    fetchAttendanceHistory();
+  }, [activeView]);
+
   useEffect(() => {
     const currentManager = getUserData();
     if (!currentManager) {
-      window.location.href = "/login"; // Using window.location since navigate isn't defined
+      window.location.href = "/login";
       return;
     }
     setManager(currentManager);
     setLoading(false);
   }, []);
 
-  // Add this useEffect to fetch the active method
   useEffect(() => {
     const fetchActiveMethod = async () => {
       try {
@@ -550,15 +145,6 @@ const ManagerDashboard = () => {
     fetchActiveMethod();
   }, []);
 
-  // Effect to control camera activation based on activeView and primaryMethod
-  useEffect(() => {
-    // Only activate camera if we're on attendance view AND using facial recognition
-    const shouldActivateCamera =
-      activeView === "attendance" && primaryMethod === "facial";
-    setIsCameraActive(shouldActivateCamera);
-  }, [activeView, primaryMethod]);
-
-  // Fetch attendance records - all records without department filtering
   useEffect(() => {
     const fetchAttendanceRecords = async () => {
       try {
@@ -566,7 +152,6 @@ const ManagerDashboard = () => {
         const response = await axios.get(
           `http://localhost:8092/api/attendance/record/today`,
         );
-        console.log("Fetched attendance records:", response.data);
         setAttendanceRecords(response.data);
       } catch (error) {
         console.error("Error fetching attendance records:", error);
@@ -580,7 +165,6 @@ const ManagerDashboard = () => {
     return () => clearInterval(intervalId);
   }, []);
 
-  // Fetch facial data for employee ID
   useEffect(() => {
     const fetchFacialData = async () => {
       if (!employeeId) {
@@ -592,8 +176,6 @@ const ManagerDashboard = () => {
         const response = await axios.get(
           `http://localhost:8092/api/employee/${employeeId}/facial-data`,
         );
-
-        console.log("Fetched facial data:", response.data);
         setStoredFacialData(response.data);
       } catch (error) {
         console.error("Error fetching facial data:", error);
@@ -606,17 +188,104 @@ const ManagerDashboard = () => {
     fetchFacialData();
   }, [employeeId]);
 
-  // Handle facial data capture and attendance recording
+  useEffect(() => {
+    const fetchPlanningData = async () => {
+      if (activeView === "planning" && manager) {
+        try {
+          setPlanningLoading(true);
+          setPlanningError(null);
+          const response = await axios.get(
+            "http://localhost:8092/api/planning/plannings",
+          );
+          console.log("Fetched planning data:", response.data);
+          const filteredPlannings = response.data.filter(
+            (planning) => planning.departmentId === manager.departmentId,
+          );
+          console.log("Fetched planning data:", filteredPlannings);
+          setPlanningData(filteredPlannings);
+        } catch (error) {
+          console.error("Error fetching planning data:", error);
+          setPlanningError("Erreur lors du chargement du planning");
+        } finally {
+          setPlanningLoading(false);
+        }
+      }
+    };
+
+    fetchPlanningData();
+  }, [activeView, manager]);
+
+  useEffect(() => {
+    const shouldActivateCamera =
+      activeView === "attendance" && primaryMethod === "facial";
+    setIsCameraActive(shouldActivateCamera);
+  }, [activeView, primaryMethod]);
+
+  useEffect(() => {
+    const fetchAttendanceMethods = async () => {
+      try {
+        const response = await axios.get("http://localhost:8092/api/attendance-methods");
+        setAttendanceMethods(response.data);
+      } catch (error) {
+        console.error("Error fetching attendance methods:", error);
+      }
+    };
+    fetchAttendanceMethods();
+  }, []);
+
+  const handleDetectFaces = async () => {
+    if (!videoRef.current || !canvasRef.current) {
+      setVerificationStatus("error");
+      setVerificationMessage("Camera not initialized");
+      return;
+    }
+
+    try {
+      setVerificationStatus("pending");
+      setVerificationMessage("Detecting face...");
+
+      const detections = await detectFaces(videoRef.current, canvasRef.current);
+      console.log("Face detections:", detections);
+
+      if (detections && detections.length > 0) {
+        setVerificationStatus("success");
+        setVerificationMessage("Face detected successfully!");
+
+        // If we have an employee ID, proceed with verification
+        if (employeeId) {
+          await handleFacialDataCapture(detections[0].descriptor);
+        }
+      } else {
+        setVerificationStatus("error");
+        setVerificationMessage("No face detected. Please ensure your face is clearly visible in the camera.");
+      }
+    } catch (error) {
+      console.error("Error detecting faces:", error);
+      setVerificationStatus("error");
+      setVerificationMessage("Error detecting faces. Please try again.");
+    }
+  };
+
   const handleFacialDataCapture = async (liveDescriptor) => {
     if (!employeeId) {
-      setVerificationStatus("error");
-      setVerificationMessage("Please enter Employee ID first");
+      enqueueSnackbar("Please enter Employee ID first", { 
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
       return;
     }
 
     if (!storedFacialData) {
-      setVerificationStatus("error");
-      setVerificationMessage("No registered facial data for this employee");
+      enqueueSnackbar("No registered facial data for this employee", { 
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
       return;
     }
 
@@ -626,16 +295,14 @@ const ManagerDashboard = () => {
     try {
       const liveArray = Array.from(liveDescriptor);
       const storedDescriptor = storedFacialData[0].descriptor;
-
-      // compareFaces should return a similarity score (0.0 - 1.0)
       const similarity = compareFaces(liveArray, storedDescriptor);
+      console.log("Face similarity score:", similarity);
 
-      if (similarity > 0.8) {
+      if (similarity > 0.9) {
         setVerificationStatus("success");
         setVerificationMessage("Verification successful!");
 
         try {
-          // Create attendance record that properly links to Employee entity
           const response = await axios.post(
             "http://localhost:8092/api/attendance/record",
             {
@@ -645,12 +312,18 @@ const ManagerDashboard = () => {
             },
           );
 
-          // Add the new record to the existing records instead of fetching all again
           if (response.data) {
             setAttendanceRecords((prevRecords) => [
               ...prevRecords,
               response.data,
             ]);
+            enqueueSnackbar("Attendance recorded successfully!", { 
+              variant: 'success',
+              anchorOrigin: {
+                vertical: 'top',
+                horizontal: 'right',
+              },
+            });
           }
         } catch (error) {
           console.error("Recording error:", error);
@@ -659,30 +332,54 @@ const ManagerDashboard = () => {
             "Failed to record attendance: " +
               (error.response?.data?.message || error.message),
           );
+          enqueueSnackbar("Failed to record attendance", { 
+            variant: 'error',
+            anchorOrigin: {
+              vertical: 'top',
+              horizontal: 'right',
+            },
+          });
         }
       } else {
         setVerificationStatus("error");
-        setVerificationMessage("Verification failed - Face mismatch");
+        setVerificationMessage("Verification failed - Face mismatch. Please try again.");
+        enqueueSnackbar("Face verification failed", { 
+          variant: 'error',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
       }
     } catch (error) {
       console.error("Verification error:", error);
       setVerificationStatus("error");
-      setVerificationMessage("Error processing verification");
+      setVerificationMessage("Error processing verification. Please try again.");
+      enqueueSnackbar("Error processing verification", { 
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     }
   };
 
-  // Handle employee ID change
   const handleEmployeeIdChange = (e) => {
     setEmployeeId(e.target.value);
-    // Reset verification status when ID changes
     setVerificationStatus(null);
     setVerificationMessage("");
   };
 
-  // Handle sending report to chef service
   const handleSendReport = async () => {
     if (attendanceRecords.length === 0) {
-      alert("No attendance records to report");
+      enqueueSnackbar("No attendance records to report", { 
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
       return;
     }
 
@@ -694,32 +391,39 @@ const ManagerDashboard = () => {
         reportedChef: true,
       });
 
-      // Mark all records as reported in the UI
       setAttendanceRecords((records) =>
         records.map((record) => ({ ...record, reportedChef: true })),
       );
-
-      alert("Report sent successfully to chef service!");
+      enqueueSnackbar("Report sent successfully to chef service!", { 
+        variant: 'success',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     } catch (error) {
       console.error("Error sending report:", error);
-      alert("Error sending report. Please try again.");
+      enqueueSnackbar("Error sending report. Please try again.", { 
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     } finally {
       setIsSendingReport(false);
     }
   };
 
-  // Handle tab change
   const handleTabChange = (view) => {
     setActiveView(view);
   };
 
-  // Handle logout
   const handleLogout = () => {
     logout();
-    window.location.href = "/login"; // Using window.location since navigate isn't defined
+    window.location.href = "/login";
   };
 
-  // Get verification status class
   const getVerificationStatusClass = () => {
     switch (verificationStatus) {
       case "success":
@@ -733,273 +437,555 @@ const ManagerDashboard = () => {
     }
   };
 
-  return (
-    <div className="flex flex-col h-screen bg-gray-100">
-      <header className="bg-white shadow-md px-6 py-4 flex justify-between items-center">
-        <h1 className="text-2xl font-semibold text-gray-800">
-          Tableau de bord
-        </h1>
-        <button
-          onClick={handleLogout}
-          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-          Déconnexion
-        </button>
-      </header>
+  const getActiveMethod = () => {
+    const methods = Object.entries(attendanceMethods)
+      .filter(([_, config]) => config.active)
+      .sort((a, b) => a[1].priority - b[1].priority);
 
-      <div className="flex-1 p-6">
-        {/* Navigation Tabs */}
-        <div className="mb-6 border-b">
-          <div className="flex space-x-4">
+    // Return the method with highest priority
+    return methods.length > 0 ? methods[0][0] : null;
+  };
+
+  const handlePinAttendance = async (e) => {
+    e.preventDefault();
+    setPinError("");
+    setPinSuccess("");
+
+    if (!pinAttendance.employeeId) {
+      enqueueSnackbar("Please enter Employee ID first", { 
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
+      return;
+    }
+
+    if (!pinAttendance.pinCode) {
+      enqueueSnackbar("Please enter PIN code", { 
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
+      return;
+    }
+
+    try {
+      const response = await axios.get(
+        `http://localhost:8092/api/employee/${pinAttendance.employeeId}/code-pin`
+      );
+
+      if (!response.data) {
+        enqueueSnackbar("No data received from server", { 
+          variant: 'error',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
+        return;
+      }
+
+      const enteredPin = String(pinAttendance.pinCode).trim();
+      const storedPin = String(response.data).trim();
+      
+      const isPinValid = enteredPin === storedPin;
+
+      if (isPinValid) {
+        try {
+          const attendanceResponse = await axios.post(
+            "http://localhost:8092/api/attendance/record",
+            {
+              employeeId: parseInt(pinAttendance.employeeId),
+              timestamp: new Date().toISOString(),
+              status: "PRESENT",
+            }
+          );
+
+          if (attendanceResponse.data) {
+            setAttendanceRecords((prevRecords) => [
+              ...prevRecords,
+              attendanceResponse.data,
+            ]);
+            setPinAttendance({ employeeId: "", pinCode: "" });
+            enqueueSnackbar("Attendance recorded successfully!", { 
+              variant: 'success',
+              anchorOrigin: {
+                vertical: 'top',
+                horizontal: 'right',
+              },
+            });
+          }
+        } catch (error) {
+          console.error("Recording error:", error);
+          enqueueSnackbar("Failed to record attendance", { 
+            variant: 'error',
+            anchorOrigin: {
+              vertical: 'top',
+              horizontal: 'right',
+            },
+          });
+        }
+      } else {
+        enqueueSnackbar("Verification failed - PIN code mismatch", { 
+          variant: 'error',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Verification error:", error);
+      if (error.response?.status === 404) {
+        enqueueSnackbar("No registered PIN code for this employee", { 
+          variant: 'error',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
+      } else {
+        enqueueSnackbar("Error processing verification", { 
+          variant: 'error',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
+      }
+    }
+  };
+
+  const shouldShowPinCode = () => {
+    const pinCodeConfig = attendanceMethods.pinCode;
+    return pinCodeConfig && pinCodeConfig.active && pinCodeConfig.priority === 1;
+  };
+
+  return (
+    <div className="flex h-screen bg-emerald-50">
+      {/* Sidebar */}
+      <div className="w-64 bg-white shadow-lg">
+        <div className="p-6 border-b border-emerald-100">
+          <div className="flex items-center gap-2 mb-4">
+            <Monitor size="2rem" className="text-emerald-600" />
+            <CalendarClock size="2rem" className="text-emerald-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-emerald-800">Espace Manager</h1>
+          <p className="text-sm text-emerald-600">NTIC Management</p>
+        </div>
+
+        <div className="p-4">
+          {manager && (
+            <div className="flex items-center mb-6 p-4 bg-emerald-50 rounded-lg">
+              <div className="bg-emerald-100 rounded-full p-2">
+                <User size={24} className="text-emerald-600" />
+              </div>
+              <div className="ml-3">
+                <div className="font-medium text-emerald-800">{manager.name}</div>
+                <div className="text-sm text-emerald-600">{manager.email}</div>
+              </div>
+            </div>
+          )}
+
+          <nav>
             <button
-              className={`py-2 px-4 ${
+              onClick={() => handleTabChange("attendance")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
                 activeView === "attendance"
-                  ? "border-b-2 border-blue-500 text-blue-600"
-                  : "text-gray-600 hover:text-blue-500"
-              }`}
-              onClick={() => handleTabChange("attendance")}>
-              Pointage en temps réel
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "text-emerald-600 hover:bg-emerald-50"
+              }`}>
+              <CalendarClock size={20} />
+              <span>Attendance Management</span>
             </button>
+
             <button
-              className={`py-2 px-4 ${
-                activeView === "manual"
-                  ? "border-b-2 border-blue-500 text-blue-600"
-                  : "text-gray-600 hover:text-blue-500"
-              }`}
-              onClick={() => handleTabChange("manual")}>
-              Pointage Manuel
-            </button>
-            <button
-              className={`py-2 px-4 ${
+              onClick={() => handleTabChange("history")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
                 activeView === "history"
-                  ? "border-b-2 border-blue-500 text-blue-600"
-                  : "text-gray-600 hover:text-blue-500"
-              }`}
-              onClick={() => handleTabChange("history")}>
-              Historique
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "text-emerald-600 hover:bg-emerald-50"
+              }`}>
+              <History size={20} />
+              <span>Attendance History</span>
             </button>
+
+            <div className="mt-6 mb-2 text-sm font-medium text-emerald-600 uppercase">
+              Profile Management
+            </div>
+
             <button
-              className={`py-2 px-4 ${
-                activeView === "planning"
-                  ? "border-b-2 border-blue-500 text-blue-600"
-                  : "text-gray-600 hover:text-blue-500"
-              }`}
-              onClick={() => handleTabChange("planning")}>
-              Planning
-            </button>
-            <button
-              className={`py-2 px-4 ${
+              onClick={() => handleTabChange("profile")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
                 activeView === "profile"
-                  ? "border-b-2 border-blue-500 text-blue-600"
-                  : "text-gray-600 hover:text-blue-500"
-              }`}
-              onClick={() => handleTabChange("profile")}>
-              Consulter Profile
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "text-emerald-600 hover:bg-emerald-50"
+              }`}>
+              <User size={20} />
+              <span>View Profile</span>
             </button>
+
             <button
-              className={`py-2 px-4 ${
+              onClick={() => handleTabChange("editProfile")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
                 activeView === "editProfile"
-                  ? "border-b-2 border-blue-500 text-blue-600"
-                  : "text-gray-600 hover:text-blue-500"
-              }`}
-              onClick={() => handleTabChange("editProfile")}>
-              Gérer Profile
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "text-emerald-600 hover:bg-emerald-50"
+              }`}>
+              <Settings size={20} />
+              <span>Edit Profile</span>
+            </button>
+          </nav>
+
+          <div className="absolute bottom-4 left-4 right-4">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-all duration-300">
+              <LogOut size={20} />
+              <span>Logout</span>
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Attendance View */}
-        {activeView === "attendance" && (
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto p-8">
+        {/* Confirmation Slide */}
+        {showConfirmation && (
+          <div
+            className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg transform transition-transform duration-300 ${
+              confirmationType === "success"
+                ? "bg-green-100 text-green-800 border border-green-300"
+                : "bg-red-100 text-red-800 border border-red-300"
+            }`}
+            style={{
+              animation: "slideIn 0.3s ease-out",
+            }}>
+            <div className="flex items-center gap-2">
+              {confirmationType === "success" ? (
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              )}
+              <span>{confirmationMessage}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Add this style block at the top of your component */}
+        <style>
+          {`
+            @keyframes slideIn {
+              from {
+                transform: translateX(100%);
+                opacity: 0;
+              }
+              to {
+                transform: translateX(0);
+                opacity: 1;
+              }
+            }
+          `}
+        </style>
+
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-lg text-emerald-600">Loading...</div>
+          </div>
+        ) : (
           <div className="space-y-6">
-            {/* Main Attendance Section */}
-            <div className="grid grid-cols-12 gap-6">
-              {/* Left Side - Employee ID Input */}
-              <div className="col-span-3 bg-white p-4 rounded-lg shadow-md">
-                <h3 className="text-lg font-semibold mb-4">Vérification</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      ID Employé
-                    </label>
-                    <input
-                      type="text"
-                      value={employeeId}
-                      onChange={handleEmployeeIdChange}
-                      className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                      placeholder="Entrez l'ID"
-                    />
-                  </div>
-
-                  {/* Verification Status Message */}
-                  {verificationStatus && (
-                    <div
-                      className={`p-3 border rounded-md mt-4 ${getVerificationStatusClass()}`}>
-                      {verificationMessage}
+            {activeView === "attendance" && (
+              <div>
+                <h2 className="text-2xl font-bold text-emerald-800 mb-6">Attendance Management</h2>
+                <div className="grid grid-cols-1 gap-6">
+                  {/* PIN Code Attendance Section - Only show if it's the primary method */}
+                  {shouldShowPinCode() && (
+                    <div className="bg-white p-6 rounded-xl shadow-md">
+                      <h3 className="text-lg font-semibold text-emerald-800 mb-4">PIN Code Attendance</h3>
+                      <form onSubmit={handlePinAttendance} className="space-y-4">
+                        <div>
+                          <label htmlFor="employeeId" className="block text-sm font-medium text-emerald-700 mb-1">
+                            Employee ID
+                          </label>
+                          <input
+                            type="text"
+                            id="employeeId"
+                            value={pinAttendance.employeeId}
+                            onChange={(e) => setPinAttendance(prev => ({ ...prev, employeeId: e.target.value }))}
+                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            placeholder="Enter Employee ID"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="pinCode" className="block text-sm font-medium text-emerald-700 mb-1">
+                            PIN Code
+                          </label>
+                          <input
+                            type="password"
+                            id="pinCode"
+                            value={pinAttendance.pinCode}
+                            onChange={(e) => setPinAttendance(prev => ({ ...prev, pinCode: e.target.value }))}
+                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            placeholder="Enter PIN Code"
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                          Record Attendance
+                        </button>
+                      </form>
+                      {pinError && (
+                        <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg">
+                          {pinError}
+                        </div>
+                      )}
+                      {pinSuccess && (
+                        <div className="mt-4 p-3 bg-green-100 text-green-700 rounded-lg">
+                          {pinSuccess}
+                        </div>
+                      )}
                     </div>
+                  )}
+
+                  {/* Show only the highest priority method */}
+                  {getActiveMethod() === 'facialRecognition' && (
+                    <div className="bg-white p-6 rounded-xl shadow-md">
+                      <h3 className="text-lg font-semibold text-emerald-800 mb-4">Facial Recognition</h3>
+                      <div className="space-y-4">
+                        <div className="relative">
+                          <video
+                            ref={videoRef}
+                            className="w-full rounded-lg border border-emerald-200"
+                            autoPlay
+                            playsInline
+                            style={{ transform: 'scaleX(-1)' }}
+                          />
+                          <canvas
+                            ref={canvasRef}
+                            className="absolute top-0 left-0 w-full h-full"
+                            style={{ transform: 'scaleX(-1)' }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            value={employeeId}
+                            onChange={handleEmployeeIdChange}
+                            placeholder="Enter Employee ID"
+                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                          <button
+                            onClick={() => setIsCameraActive(!isCameraActive)}
+                            className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                            {isCameraActive ? "Stop Camera" : "Start Camera"}
+                          </button>
+                          <button
+                            onClick={handleDetectFaces}
+                            disabled={!isCameraActive}
+                            className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            Detect Faces
+                          </button>
+                        </div>
+                        {verificationStatus && (
+                          <div className={`p-4 rounded-lg border ${getVerificationStatusClass()}`}>
+                            {verificationMessage}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {getActiveMethod() === 'qrCode' && (
+                    <div className="bg-white p-6 rounded-xl shadow-md">
+                      <h3 className="text-lg font-semibold text-emerald-800 mb-4">QR Code Scanner</h3>
+                      <QrCodeGenerator />
+                    </div>
+                  )}
+
+                  {/* Manual Entry Section - Always visible */}
+                  <div className="bg-white p-6 rounded-xl shadow-md">
+                    <h3 className="text-lg font-semibold text-emerald-800 mb-4">Manual Entry</h3>
+                    <PointageManuel />
+                  </div>
+                </div>
+
+                {/* Attendance Records */}
+                <div className="mt-6 bg-white p-6 rounded-xl shadow-md">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-emerald-800">Today's Records</h3>
+                    <button
+                      onClick={handleSendReport}
+                      disabled={isSendingReport}
+                      className={`px-4 py-2 bg-emerald-600 text-white rounded-lg transition-colors ${
+                        isSendingReport ? "opacity-50 cursor-not-allowed" : "hover:bg-emerald-700"
+                      }`}>
+                      {isSendingReport ? "Sending..." : "Send Report to Chef"}
+                    </button>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-emerald-200">
+                          <th className="text-center p-2 text-emerald-800">Employee ID</th>
+                          <th className="text-center p-2 text-emerald-800">Name</th>
+                          <th className="text-center p-2 text-emerald-800">Time</th>
+                          <th className="text-center p-2 text-emerald-800">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {attendanceRecords.map((record, index) => (
+                          <tr key={index} className="border-b border-emerald-100 hover:bg-emerald-50">
+                            <td className="p-2 text-emerald-700 text-center">{record.employeeId}</td>
+                            <td className="p-2 text-emerald-700 text-center">{record.employeeName}</td>
+                            <td className="p-2 text-emerald-700 text-center">
+                              {new Date(record.timestamp).toLocaleTimeString()}
+                            </td>
+                            <td className="p-2 text-center">
+                              <span
+                                className={`px-2 py-1 rounded text-sm ${
+                                  record.status === "PRESENT"
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}>
+                                {record.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeView === "history" && (
+              <div>
+                <h2 className="text-2xl font-bold text-emerald-800 mb-6">Attendance History</h2>
+                <div className="bg-white p-6 rounded-xl shadow-md">
+                  {historyLoading ? (
+                    <div className="text-center py-4 text-emerald-600">Loading history...</div>
+                  ) : historyError ? (
+                    <div className="text-center py-4 text-red-500">{historyError}</div>
+                  ) : attendanceHistory.length > 0 ? (
+                    <div className="space-y-4">
+                      {Object.entries(
+                        attendanceHistory.reduce((acc, record) => {
+                          const date = new Date(record.timestamp).toLocaleDateString();
+                          if (!acc[date]) acc[date] = [];
+                          acc[date].push(record);
+                          return acc;
+                        }, {}),
+                      )
+                        .sort(([dateA], [dateB]) => new Date(dateB) - new Date(dateA))
+                        .map(([date, records]) => (
+                          <div key={date} className="border border-emerald-200 rounded-lg overflow-hidden">
+                            <div
+                              className="flex items-center justify-between p-4 bg-emerald-50 hover:bg-emerald-100 cursor-pointer"
+                              onClick={() =>
+                                setExpandedDates((prev) => ({
+                                  ...prev,
+                                  [date]: !prev[date],
+                                }))
+                              }>
+                              <div className="flex items-center gap-3">
+                                <span className="text-emerald-600 text-xl">📅</span>
+                                <div>
+                                  <h3 className="font-semibold text-emerald-800">{date}</h3>
+                                  <p className="text-sm text-emerald-600">
+                                    {records.length} record{records.length > 1 ? "s" : ""}
+                                  </p>
+                                </div>
+                              </div>
+                              <span
+                                className={`transform transition-transform ${
+                                  expandedDates[date] ? "rotate-90" : ""
+                                }`}>
+                                ▸
+                              </span>
+                            </div>
+
+                            {expandedDates[date] && (
+                              <div className="border-t border-emerald-200">
+                                <div className="overflow-x-auto">
+                                  <table className="w-full">
+                                    <thead>
+                                      <tr className="bg-emerald-50">
+                                        <th className="text-center p-2 text-emerald-800">Employee ID</th>
+                                        <th className="text-center p-2 text-emerald-800">Name</th>
+                                        <th className="text-center p-2 text-emerald-800">Time</th>
+                                        <th className="text-center p-2 text-emerald-800">Status</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {records.map((record, index) => (
+                                        <tr
+                                          key={index}
+                                          className="border-b border-emerald-100 hover:bg-emerald-50">
+                                          <td className="p-2 text-emerald-700 text-center">{record.employeeId}</td>
+                                          <td className="p-2 text-emerald-700 text-center">{record.employeeName}</td>
+                                          <td className="p-2 text-emerald-700 text-center">
+                                            {new Date(record.timestamp).toLocaleTimeString()}
+                                          </td>
+                                          <td className="p-2 text-center">
+                                            <span
+                                              className={`px-2 py-1 rounded text-sm ${
+                                                record.status === "PRESENT"
+                                                  ? "bg-emerald-100 text-emerald-800"
+                                                  : "bg-red-100 text-red-800"
+                                              }`}>
+                                              {record.status}
+                                            </span>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-emerald-600">No attendance history found</div>
                   )}
                 </div>
               </div>
+            )}
 
-              {/* Center - QR Code or Facial Recognition */}
-              <div className="col-span-6">
-                {primaryMethod === "qr" ? (
-                  <QrCodeGenerator />
-                ) : (
-                  <div className="bg-white p-4 rounded-lg shadow-md">
-                    <h3 className="text-lg font-semibold mb-4 text-center">
-                      {isCameraActive
-                        ? "Capture Faciale"
-                        : "Caméra désactivée - Retournez à la page Pointage en temps réel"}
-                    </h3>
-                    <div className="flex justify-center">
-                      <Facile
-                        onCapture={handleFacialDataCapture}
-                        isActive={isCameraActive}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Right Side - Quick Stats */}
-              <div className="col-span-3 bg-white p-4 rounded-lg shadow-md">
-                <h3 className="text-lg font-semibold mb-4">Statistiques</h3>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-gray-500">
-                      Pointages aujourd'hui
-                    </p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {attendanceRecords.length}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleSendReport}
-                    disabled={isSendingReport || attendanceRecords.length === 0}
-                    className={`w-full px-4 py-2 text-white rounded-md text-sm ${
-                      isSendingReport || attendanceRecords.length === 0
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-green-600 hover:bg-green-700"
-                    }`}>
-                    {isSendingReport
-                      ? "Envoi en cours..."
-                      : "Envoyer au Chef de Service"}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Attendance Records Table */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Pointages du jour</h3>
-                <div className="flex space-x-2">
-                  <button className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
-                    Exporter PDF
-                  </button>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-white">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ID
-                      </th>
-                      <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Nom
-                      </th>
-                      <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Heure
-                      </th>
-                      <th className="py-2 px-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Statut
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {loading ? (
-                      <tr>
-                        <td
-                          colSpan="4"
-                          className="py-4 text-center text-gray-500">
-                          Chargement...
-                        </td>
-                      </tr>
-                    ) : attendanceRecords.length > 0 ? (
-                      attendanceRecords.map((record, index) => (
-                        <tr key={index}>
-                          <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
-                            {record.employeeId}
-                          </td>
-                          <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
-                            {record.employeeName}
-                          </td>
-                          <td className="py-2 px-3 whitespace-nowrap text-sm text-gray-900">
-                            {new Date(record.timestamp).toLocaleTimeString()}
-                          </td>
-                          <td className="py-2 px-3 whitespace-nowrap text-sm">
-                            <span
-                              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                record.reportedChef
-                                  ? "bg-blue-100 text-blue-800"
-                                  : "bg-green-100 text-green-800"
-                              }`}>
-                              {record.status}
-                              {record.reportedChef && " ✓"}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan="4"
-                          className="py-4 text-center text-gray-500">
-                          Aucun pointage enregistré aujourd'hui
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            {activeView === "profile" && manager && <ProfileView employee={manager} />}
+            {activeView === "editProfile" && manager && (
+              <EditProfileView employee={manager} setEmployee={setManager} />
+            )}
           </div>
-        )}
-
-        {/* Manual Attendance View */}
-        {activeView === "manual" && <PointageManuel />}
-
-        {/* History View */}
-        {activeView === "history" && (
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold mb-4">
-              Historique des pointages
-            </h3>
-            <div className="text-center text-gray-500 py-8">
-              Cette fonctionnalité sera disponible prochainement
-            </div>
-          </div>
-        )}
-
-        {/* Planning View */}
-        {activeView === "planning" && (
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold mb-4">Planning</h3>
-            <div className="text-center text-gray-500 py-8">
-              Cette fonctionnalité sera disponible prochainement
-            </div>
-          </div>
-        )}
-
-        {/* Profile View */}
-        {activeView === "profile" && manager && (
-          <ProfileView employee={manager} />
-        )}
-
-        {/* Edit Profile View */}
-        {activeView === "editProfile" && manager && (
-          <EditProfileView employee={manager} setEmployee={setManager} />
         )}
       </div>
     </div>

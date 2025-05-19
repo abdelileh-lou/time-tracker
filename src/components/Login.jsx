@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { setAuthData } from "../Auth/auth";
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, Monitor } from "lucide-react";
 
 const Login = () => {
   const [username, setUsername] = useState("");
@@ -86,101 +86,110 @@ const Login = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <form
-        onSubmit={handleLogin}
-        className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <div className="flex flex-col items-center mb-8">
-          <CalendarClock size="3rem" className="text-blue-500 mb-4" />
-          <h2 className="text-3xl font-bold text-gray-800">Login</h2>
-          <p className="text-gray-600 mt-2">
-            Enter your credentials to access your account
-          </p>
-        </div>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
-            {error}
+    <div className="min-h-screen bg-emerald-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <form
+          onSubmit={handleLogin}
+          className="bg-white p-8 rounded-2xl shadow-xl transform hover:scale-[1.02] transition-all duration-300">
+          <div className="flex flex-col items-center mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Monitor size="3rem" className="text-emerald-600" />
+              <CalendarClock size="3rem" className="text-emerald-600" />
+            </div>
+            <h2 className="text-3xl font-bold text-emerald-800 mb-2">NTIC</h2>
+            <p className="text-emerald-600 text-center">
+              Enter your credentials to access your account
+            </p>
           </div>
-        )}
 
-        <div className="mb-4">
-          <label
-            htmlFor="username"
-            className="block text-sm font-medium text-gray-700 mb-1">
-            Username
-          </label>
-          <input
-            id="username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-            autoFocus
-          />
-        </div>
-
-        <div className="mb-6">
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700 mb-1">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full py-2 px-4 rounded-md text-white font-medium ${
-            loading
-              ? "bg-blue-400 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700"
-          } transition-colors`}>
-          {loading ? (
-            <span className="flex items-center justify-center">
-              <svg
-                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Logging in...
-            </span>
-          ) : (
-            "Login"
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
+              {error}
+            </div>
           )}
-        </button>
 
-        <div className="mt-4 text-center text-sm">
-          <a href="/forgot-password" className="text-blue-600 hover:underline">
-            Forgot password?
-          </a>
-        </div>
+          <div className="space-y-4">
+            <div>
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-emerald-700 mb-1">
+                Username
+              </label>
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300"
+                required
+                autoFocus
+              />
+            </div>
 
-        <div className="mt-8 pt-4 border-t border-gray-200 text-center text-xs text-gray-500">
-          &copy; {new Date().getFullYear()} Your Company. All rights reserved.
-        </div>
-      </form>
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-emerald-700 mb-1">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-300"
+                required
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className={`w-full mt-6 py-3 px-4 rounded-lg text-white font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 ${
+              loading
+                ? "bg-emerald-400 cursor-not-allowed"
+                : "bg-emerald-600 hover:bg-emerald-700"
+            }`}>
+            {loading ? (
+              <span className="flex items-center justify-center">
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Logging in...
+              </span>
+            ) : (
+              "Login"
+            )}
+          </button>
+
+          <div className="mt-4 text-center">
+            <a
+              href="/forgot-password"
+              className="text-emerald-600 hover:text-emerald-700 text-sm font-medium transition-colors duration-300">
+              Forgot password?
+            </a>
+          </div>
+
+          <div className="mt-8 pt-4 border-t border-emerald-100 text-center text-xs text-emerald-500">
+            &copy; {new Date().getFullYear()} NTIC. All rights reserved.
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
