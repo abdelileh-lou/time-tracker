@@ -6,6 +6,7 @@ import PointageManuel from "./PointageManuel";
 import ProfileView from "../Employee/ProfileView";
 import EditProfileView from "../Employee/EditProfileView";
 import { Monitor, CalendarClock, Users, Settings, LogOut, ClipboardList, History, User } from "lucide-react";
+import { useSnackbar } from 'notistack';
 import {
   loadModels,
   detectFaces,
@@ -14,6 +15,7 @@ import {
 import { getUserData, logout } from "../../Auth/auth";
 
 const ManagerDashboard = () => {
+  const { enqueueSnackbar } = useSnackbar();
   // Add missing refs
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -28,6 +30,9 @@ const ManagerDashboard = () => {
   const [verificationMessage, setVerificationMessage] = useState("");
   const [storedFacialData, setStoredFacialData] = useState(null);
   const [isSendingReport, setIsSendingReport] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationMessage, setConfirmationMessage] = useState("");
+  const [confirmationType, setConfirmationType] = useState(""); // 'success' or 'error'
   const [manager, setManager] = useState(null);
   const [primaryMethod, setPrimaryMethod] = useState("facial");
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -263,14 +268,24 @@ const ManagerDashboard = () => {
 
   const handleFacialDataCapture = async (liveDescriptor) => {
     if (!employeeId) {
-      setVerificationStatus("error");
-      setVerificationMessage("Please enter Employee ID first");
+      enqueueSnackbar("Please enter Employee ID first", { 
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
       return;
     }
 
     if (!storedFacialData) {
-      setVerificationStatus("error");
-      setVerificationMessage("No registered facial data for this employee");
+      enqueueSnackbar("No registered facial data for this employee", { 
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
       return;
     }
 
@@ -283,7 +298,7 @@ const ManagerDashboard = () => {
       const similarity = compareFaces(liveArray, storedDescriptor);
       console.log("Face similarity score:", similarity);
 
-      if (similarity > 0.9) { // Adjusted threshold for better matching
+      if (similarity > 0.9) {
         setVerificationStatus("success");
         setVerificationMessage("Verification successful!");
 
@@ -302,6 +317,13 @@ const ManagerDashboard = () => {
               ...prevRecords,
               response.data,
             ]);
+            enqueueSnackbar("Attendance recorded successfully!", { 
+              variant: 'success',
+              anchorOrigin: {
+                vertical: 'top',
+                horizontal: 'right',
+              },
+            });
           }
         } catch (error) {
           console.error("Recording error:", error);
@@ -310,15 +332,36 @@ const ManagerDashboard = () => {
             "Failed to record attendance: " +
               (error.response?.data?.message || error.message),
           );
+          enqueueSnackbar("Failed to record attendance", { 
+            variant: 'error',
+            anchorOrigin: {
+              vertical: 'top',
+              horizontal: 'right',
+            },
+          });
         }
       } else {
         setVerificationStatus("error");
         setVerificationMessage("Verification failed - Face mismatch. Please try again.");
+        enqueueSnackbar("Face verification failed", { 
+          variant: 'error',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
       }
     } catch (error) {
       console.error("Verification error:", error);
       setVerificationStatus("error");
       setVerificationMessage("Error processing verification. Please try again.");
+      enqueueSnackbar("Error processing verification", { 
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     }
   };
 
@@ -330,7 +373,13 @@ const ManagerDashboard = () => {
 
   const handleSendReport = async () => {
     if (attendanceRecords.length === 0) {
-      alert("No attendance records to report");
+      enqueueSnackbar("No attendance records to report", { 
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
       return;
     }
 
@@ -345,10 +394,22 @@ const ManagerDashboard = () => {
       setAttendanceRecords((records) =>
         records.map((record) => ({ ...record, reportedChef: true })),
       );
-      alert("Report sent successfully to chef service!");
+      enqueueSnackbar("Report sent successfully to chef service!", { 
+        variant: 'success',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     } catch (error) {
       console.error("Error sending report:", error);
-      alert("Error sending report. Please try again.");
+      enqueueSnackbar("Error sending report. Please try again.", { 
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     } finally {
       setIsSendingReport(false);
     }
@@ -391,49 +452,49 @@ const ManagerDashboard = () => {
     setPinSuccess("");
 
     if (!pinAttendance.employeeId) {
-      setPinError("Please enter Employee ID first");
+      enqueueSnackbar("Please enter Employee ID first", { 
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
       return;
     }
 
     if (!pinAttendance.pinCode) {
-      setPinError("Please enter PIN code");
+      enqueueSnackbar("Please enter PIN code", { 
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
       return;
     }
 
     try {
-      // Fetch the employee's PIN code from the database
       const response = await axios.get(
         `http://localhost:8092/api/employee/${pinAttendance.employeeId}/code-pin`
       );
-      console.log("Response from server:", response.data);
-      console.log("Response type:", typeof response.data);
-      console.log("Entered PIN:", pinAttendance.pinCode);
-      console.log("Entered PIN type:", typeof pinAttendance.pinCode);
 
-      // Check if response data exists and has the expected structure
       if (!response.data) {
-        setPinError("No data received from server");
+        enqueueSnackbar("No data received from server", { 
+          variant: 'error',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
         return;
       }
 
-      // Convert both values to strings for comparison
       const enteredPin = String(pinAttendance.pinCode).trim();
       const storedPin = String(response.data).trim();
       
-      console.log("Comparison details:", {
-        enteredPin,
-        storedPin,
-        areEqual: enteredPin === storedPin,
-        enteredLength: enteredPin.length,
-        storedLength: storedPin.length
-      });
-
-      // Compare the entered PIN with the PIN from the database
       const isPinValid = enteredPin === storedPin;
 
       if (isPinValid) {
-        setPinSuccess("Verification successful!");
-
         try {
           const attendanceResponse = await axios.post(
             "http://localhost:8092/api/attendance/record",
@@ -449,25 +510,52 @@ const ManagerDashboard = () => {
               ...prevRecords,
               attendanceResponse.data,
             ]);
-            // Clear the form after successful verification
             setPinAttendance({ employeeId: "", pinCode: "" });
+            enqueueSnackbar("Attendance recorded successfully!", { 
+              variant: 'success',
+              anchorOrigin: {
+                vertical: 'top',
+                horizontal: 'right',
+              },
+            });
           }
         } catch (error) {
           console.error("Recording error:", error);
-          setPinError(
-            "Failed to record attendance: " +
-            (error.response?.data?.message || error.message)
-          );
+          enqueueSnackbar("Failed to record attendance", { 
+            variant: 'error',
+            anchorOrigin: {
+              vertical: 'top',
+              horizontal: 'right',
+            },
+          });
         }
       } else {
-        setPinError("Verification failed - PIN code mismatch. Please try again.");
+        enqueueSnackbar("Verification failed - PIN code mismatch", { 
+          variant: 'error',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
       }
     } catch (error) {
       console.error("Verification error:", error);
       if (error.response?.status === 404) {
-        setPinError("No registered PIN code for this employee");
+        enqueueSnackbar("No registered PIN code for this employee", { 
+          variant: 'error',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
       } else {
-        setPinError("Error processing verification. Please try again.");
+        enqueueSnackbar("Error processing verification", { 
+          variant: 'error',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
       }
     }
   };
@@ -566,6 +654,66 @@ const ManagerDashboard = () => {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto p-8">
+        {/* Confirmation Slide */}
+        {showConfirmation && (
+          <div
+            className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg transform transition-transform duration-300 ${
+              confirmationType === "success"
+                ? "bg-green-100 text-green-800 border border-green-300"
+                : "bg-red-100 text-red-800 border border-red-300"
+            }`}
+            style={{
+              animation: "slideIn 0.3s ease-out",
+            }}>
+            <div className="flex items-center gap-2">
+              {confirmationType === "success" ? (
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              )}
+              <span>{confirmationMessage}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Add this style block at the top of your component */}
+        <style>
+          {`
+            @keyframes slideIn {
+              from {
+                transform: translateX(100%);
+                opacity: 0;
+              }
+              to {
+                transform: translateX(0);
+                opacity: 1;
+              }
+            }
+          `}
+        </style>
+
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-lg text-emerald-600">Loading...</div>

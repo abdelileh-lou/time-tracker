@@ -10,9 +10,9 @@ const Admin = () => {
   // State declarations
   const [activeSection, setActiveSection] = useState("dashboard");
   const [employees, setEmployees] = useState([]);
-  const [attendanceTypes, setAttendanceTypes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [savedConfiguration, setSavedConfiguration] = useState([]);
+  const [admin, setAdmin] = useState(null);
 
   const [newEmployee, setNewEmployee] = useState({
     name: "",
@@ -26,7 +26,7 @@ const Admin = () => {
   const [attendanceMethods, setAttendanceMethods] = useState({
     qrCode: { active: true, priority: 1 },
     facialRecognition: { active: true, priority: 2 },
-    pinCode: { active: true, priority: 3 }
+    pinCode: { active: true, priority: 3 },
   });
 
   // Facial Recognition states
@@ -57,7 +57,7 @@ const Admin = () => {
     const methodDisplayNames = {
       qrCode: "QR Code",
       facialRecognition: "Reconnaissance faciale",
-      pinCode: "Code PIN"
+      pinCode: "Code PIN",
     };
 
     const activeMethods = Object.entries(attendanceMethods)
@@ -89,9 +89,6 @@ const Admin = () => {
     if (activeSection === "employees" || activeSection === "dashboard") {
       fetchEmployees();
     }
-    if (activeSection === "attendance" || activeSection === "dashboard") {
-      fetchAttendanceTypes();
-    }
   }, [activeSection]);
 
   // API Functions
@@ -106,7 +103,7 @@ const Admin = () => {
       setAttendanceMethods({
         qrCode: { active: true, priority: 1 },
         facialRecognition: { active: true, priority: 2 },
-        pinCode: { active: true, priority: 3 }
+        pinCode: { active: true, priority: 3 },
       });
     }
   };
@@ -123,20 +120,6 @@ const Admin = () => {
     }
   };
 
-  const fetchAttendanceTypes = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(
-        "http://localhost:8092/api/attendance-types",
-      );
-      setAttendanceTypes(response.data || []);
-    } catch (error) {
-      console.error("Error fetching attendance types:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Handler Functions
   const handleMethodToggle = (method) => {
     setAttendanceMethods((prev) => ({
@@ -147,20 +130,22 @@ const Admin = () => {
 
   const handlePriorityChange = (method, newPriority) => {
     // Get all methods except the current one
-    const otherMethods = Object.keys(attendanceMethods).filter(m => m !== method);
-    
+    const otherMethods = Object.keys(attendanceMethods).filter(
+      (m) => m !== method,
+    );
+
     // Create new state with updated priorities
     const newState = { ...attendanceMethods };
     newState[method] = { ...newState[method], priority: newPriority };
-    
+
     // Update other methods' priorities
     otherMethods.forEach((otherMethod, index) => {
       newState[otherMethod] = {
         ...newState[otherMethod],
-        priority: index + (newPriority === 1 ? 2 : 1)
+        priority: index + (newPriority === 1 ? 2 : 1),
       };
     });
-    
+
     setAttendanceMethods(newState);
   };
 
@@ -187,7 +172,7 @@ const Admin = () => {
           type: "Code PIN",
           active: attendanceMethods.pinCode.active,
           priority: attendanceMethods.pinCode.priority,
-        }
+        },
       ];
 
       setSavedConfiguration(configSummary);
@@ -323,7 +308,7 @@ const Admin = () => {
             <Monitor size="2rem" className="text-emerald-600" />
             <CalendarClock size="2rem" className="text-emerald-600" />
           </div>
-          <h1 className="text-2xl font-bold text-emerald-800">Espace Admin</h1>
+          <h1 className="text-2xl font-bold text-emerald-800">Admin</h1>
           <p className="text-sm text-emerald-600">NTIC Management</p>
         </div>
 
@@ -385,7 +370,7 @@ const Admin = () => {
             onClick={() => {
               // Add logout logic here
             }}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-all duration-300">
+            className="w-30 flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-all duration-300">
             <LogOut size={20} />
             <span>Logout</span>
           </button>
@@ -402,7 +387,7 @@ const Admin = () => {
           <div className="space-y-6">
             {/* Dashboard Section */}
             {activeSection === "dashboard" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300">
                   <h3 className="text-lg font-semibold text-emerald-800 mb-2">
                     Total Employees
@@ -420,14 +405,6 @@ const Admin = () => {
                       Object.values(attendanceMethods).filter((m) => m.active)
                         .length
                     }
-                  </p>
-                </div>
-                <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300">
-                  <h3 className="text-lg font-semibold text-emerald-800 mb-2">
-                    Attendance Types
-                  </h3>
-                  <p className="text-3xl font-bold text-emerald-600">
-                    {attendanceTypes.length}
                   </p>
                 </div>
               </div>
@@ -735,11 +712,18 @@ const Admin = () => {
                                   onChange={() => handleMethodToggle(method)}
                                   className="form-checkbox h-5 w-5 text-emerald-600"
                                 />
-                                <span className="text-sm text-emerald-600">Active</span>
+                                <span className="text-sm text-emerald-600">
+                                  Active
+                                </span>
                               </label>
                               <select
                                 value={config.priority}
-                                onChange={(e) => handlePriorityChange(method, parseInt(e.target.value))}
+                                onChange={(e) =>
+                                  handlePriorityChange(
+                                    method,
+                                    parseInt(e.target.value),
+                                  )
+                                }
                                 className="form-select px-3 py-1 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
                                 <option value={1}>Primary</option>
                                 <option value={2}>Secondary</option>
@@ -747,7 +731,7 @@ const Admin = () => {
                               </select>
                             </div>
                           </div>
-                        )
+                        ),
                       )}
                     </div>
 
@@ -849,14 +833,161 @@ const Admin = () => {
             {activeSection === "settings" && (
               <div className="bg-white p-6 rounded-xl shadow-md">
                 <h2 className="text-2xl font-bold text-emerald-800 mb-6">
-                  System Settings
+                  Profile Settings
                 </h2>
                 <div className="space-y-6">
                   <div className="p-4 bg-emerald-50 rounded-lg">
                     <h3 className="text-lg font-semibold text-emerald-800 mb-4">
-                      General Settings
+                      Profile Information
                     </h3>
-                    {/* Add settings content here */}
+                    {admin && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-emerald-700 mb-1">
+                            Name
+                          </label>
+                          <input
+                            type="text"
+                            value={admin.name}
+                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            readOnly
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-emerald-700 mb-1">
+                            Email
+                          </label>
+                          <input
+                            type="email"
+                            value={admin.email}
+                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            readOnly
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-emerald-700 mb-1">
+                            Username
+                          </label>
+                          <input
+                            type="text"
+                            value={admin.username}
+                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            readOnly
+                          />
+                        </div>
+                        <div className="flex gap-4">
+                          <button
+                            onClick={() => setActiveSection("editProfile")}
+                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                            Edit Profile
+                          </button>
+                          <button
+                            onClick={() => setActiveSection("changePassword")}
+                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                            Change Password
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Edit Profile Section */}
+            {activeSection === "editProfile" && (
+              <div className="bg-white p-6 rounded-xl shadow-md">
+                <h2 className="text-2xl font-bold text-emerald-800 mb-6">
+                  Edit Profile
+                </h2>
+                <div className="space-y-6">
+                  <div className="p-4 bg-emerald-50 rounded-lg">
+                    <h3 className="text-lg font-semibold text-emerald-800 mb-4">
+                      Update Profile Information
+                    </h3>
+                    <form className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-emerald-700 mb-1">
+                          Name
+                        </label>
+                        <input
+                          type="text"
+                          value={admin?.name || ""}
+                          onChange={(e) =>
+                            setAdmin({ ...admin, name: e.target.value })
+                          }
+                          className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-emerald-700 mb-1">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          value={admin?.email || ""}
+                          onChange={(e) =>
+                            setAdmin({ ...admin, email: e.target.value })
+                          }
+                          className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                        Save Changes
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Change Password Section */}
+            {activeSection === "changePassword" && (
+              <div className="bg-white p-6 rounded-xl shadow-md">
+                <h2 className="text-2xl font-bold text-emerald-800 mb-6">
+                  Change Password
+                </h2>
+                <div className="space-y-6">
+                  <div className="p-4 bg-emerald-50 rounded-lg">
+                    <h3 className="text-lg font-semibold text-emerald-800 mb-4">
+                      Update Password
+                    </h3>
+                    <form className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-emerald-700 mb-1">
+                          Current Password
+                        </label>
+                        <input
+                          type="password"
+                          className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-emerald-700 mb-1">
+                          New Password
+                        </label>
+                        <input
+                          type="password"
+                          className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-emerald-700 mb-1">
+                          Confirm New Password
+                        </label>
+                        <input
+                          type="password"
+                          className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                        Update Password
+                      </button>
+                    </form>
                   </div>
                 </div>
               </div>

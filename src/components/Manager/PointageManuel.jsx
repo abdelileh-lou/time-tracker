@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+import { enqueueSnackbar } from "notistack";
 
 const PointageManuel = () => {
   const [formData, setFormData] = useState({
@@ -110,11 +111,14 @@ const PointageManuel = () => {
       setAttendanceRecords((records) =>
         records.map((record) => ({ ...record, reportedChef: true })),
       );
-
-      alert("Report sent successfully to chef service!");
+      enqueueSnackbar("Report sent successfully to chef service!", {
+        variant: 'success',
+      });
     } catch (error) {
       console.error("Error sending report:", error);
-      alert("Error sending report. Please try again.");
+      enqueueSnackbar("Error sending report. Please try again.", {
+        variant: 'error',
+      });
     } finally {
       setIsSendingReport(false);
     }
