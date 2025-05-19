@@ -42,6 +42,12 @@ const ManagerDashboard = () => {
     qrCode: { active: true, priority: 1 },
     facialRecognition: { active: true, priority: 2 }
   });
+  const [pinAttendance, setPinAttendance] = useState({
+    employeeId: "",
+    pinCode: ""
+  });
+  const [pinError, setPinError] = useState("");
+  const [pinSuccess, setPinSuccess] = useState("");
 
   // Initialize facial recognition models
   useEffect(() => {
@@ -276,7 +282,7 @@ const ManagerDashboard = () => {
       const similarity = compareFaces(liveArray, storedDescriptor);
       console.log("Face similarity score:", similarity);
 
-      if (similarity > 0.6) { // Adjusted threshold for better matching
+      if (similarity > 0.9) { // Adjusted threshold for better matching
         setVerificationStatus("success");
         setVerificationMessage("Verification successful!");
 
@@ -378,6 +384,51 @@ const ManagerDashboard = () => {
     return methods.length > 0 ? methods[0][0] : null;
   };
 
+  const handlePinAttendance = async (e) => {
+    e.preventDefault();
+    setPinError("");
+    setPinSuccess("");
+
+    if (!pinAttendance.employeeId || !pinAttendance.pinCode) {
+      setPinError("Please fill in all fields");
+      return;
+    }
+
+    try {
+      // First verify the PIN
+      const verifyResponse = await axios.post("http://localhost:8092/api/employee/verify-pin", {
+        employeeId: pinAttendance.employeeId,
+        pinCode: pinAttendance.pinCode
+      });
+
+      if (verifyResponse.data.verified) {
+        // If PIN is correct, record attendance
+        const attendanceResponse = await axios.post(
+          "http://localhost:8092/api/attendance/record",
+          {
+            employeeId: parseInt(pinAttendance.employeeId),
+            timestamp: new Date().toISOString(),
+            status: "PRESENT",
+          }
+        );
+
+        if (attendanceResponse.data) {
+          setAttendanceRecords((prevRecords) => [
+            ...prevRecords,
+            attendanceResponse.data,
+          ]);
+          setPinSuccess("Attendance recorded successfully!");
+          setPinAttendance({ employeeId: "", pinCode: "" }); // Reset form
+        }
+      } else {
+        setPinError("Invalid PIN code");
+      }
+    } catch (error) {
+      console.error("Error recording PIN attendance:", error);
+      setPinError(error.response?.data?.message || "Error recording attendance");
+    }
+  };
+
   return (
     <div className="flex h-screen bg-emerald-50">
       {/* Sidebar */}
@@ -477,6 +528,56 @@ const ManagerDashboard = () => {
               <div>
                 <h2 className="text-2xl font-bold text-emerald-800 mb-6">Attendance Management</h2>
                 <div className="grid grid-cols-1 gap-6">
+                  {/* PIN Code Attendance Section */}
+                  <div className="bg-white p-6 rounded-xl shadow-md">
+                    <h3 className="text-lg font-semibold text-emerald-800 mb-4">PIN Code Attendance</h3>
+                    <form onSubmit={handlePinAttendance} className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="employeeId" className="block text-sm font-medium text-emerald-700 mb-1">
+                            Employee ID
+                          </label>
+                          <input
+                            type="text"
+                            id="employeeId"
+                            value={pinAttendance.employeeId}
+                            onChange={(e) => setPinAttendance(prev => ({ ...prev, employeeId: e.target.value }))}
+                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            placeholder="Enter Employee ID"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="pinCode" className="block text-sm font-medium text-emerald-700 mb-1">
+                            PIN Code
+                          </label>
+                          <input
+                            type="password"
+                            id="pinCode"
+                            value={pinAttendance.pinCode}
+                            onChange={(e) => setPinAttendance(prev => ({ ...prev, pinCode: e.target.value }))}
+                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            placeholder="Enter PIN Code"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        type="submit"
+                        className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                        Record Attendance
+                      </button>
+                      {pinError && (
+                        <div className="p-3 bg-red-100 text-red-700 rounded-lg border border-red-200">
+                          {pinError}
+                        </div>
+                      )}
+                      {pinSuccess && (
+                        <div className="p-3 bg-emerald-100 text-emerald-700 rounded-lg border border-emerald-200">
+                          {pinSuccess}
+                        </div>
+                      )}
+                    </form>
+                  </div>
+
                   {/* Show only the highest priority method */}
                   {getActiveMethod() === 'facialRecognition' && (
                     <div className="bg-white p-6 rounded-xl shadow-md">

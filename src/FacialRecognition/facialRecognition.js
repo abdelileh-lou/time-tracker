@@ -109,5 +109,6 @@ export const compareFaces = (liveDescriptor, storedDescriptor) => {
 
   console.log("Cosine Similarity pointer:", similarity); // Log similarity for debugging
   // Adjust the threshold based on your requirements
-  return similarity > 0.7; // Adjust threshold (e.g., 0.5-0.7)
+  //return similarity > 0.7; // Adjust threshold (e.g., 0.5-0.7)
+  return similarity ;
 };
