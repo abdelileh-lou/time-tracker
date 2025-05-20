@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { Monitor, CalendarClock, Users, Settings, LogOut } from "lucide-react";
 import { useSnackbar } from 'notistack';
+import { logout } from "../../Auth/auth";
+import { useNavigate } from "react-router-dom";
 import {
   loadModels,
   detectFaces,
@@ -9,6 +11,7 @@ import {
 
 const Admin = () => {
   const { enqueueSnackbar } = useSnackbar();
+  const navigate = useNavigate();
   // State declarations
   const [activeSection, setActiveSection] = useState("dashboard");
   const [employees, setEmployees] = useState([]);
@@ -337,6 +340,11 @@ const Admin = () => {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
   return (
     <div className="flex h-screen bg-emerald-50">
       {/* Sidebar */}
@@ -405,9 +413,7 @@ const Admin = () => {
 
         <div className="absolute bottom-4 left-4 right-4">
           <button
-            onClick={() => {
-              // Add logout logic here
-            }}
+            onClick={handleLogout}
             className="w-30 flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-all duration-300">
             <LogOut size={20} />
             <span>Logout</span>
