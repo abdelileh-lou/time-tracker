@@ -117,15 +117,14 @@ const EditProfileView = ({ employee, setEmployee }) => {
         ...updatedEmployeeWithPhoto
       }));
 
-      // Update photo preview with the new URL or keep the current preview
-      if (updatedEmployee.photoUrl) {
-        setPhotoPreview(updatedEmployee.photoUrl);
-      } else if (photoPreview) {
-        // Keep the current preview if no new URL is provided
-        setPhotoPreview(photoPreview);
-      }
-
       setSuccess(true);
+
+      // If a photo was uploaded, reload the page after a short delay
+      if (photo) {
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000); // Wait 1 second to show success message before reloading
+      }
 
       // Only clear password fields if they were updated
       if (formData.password) {
