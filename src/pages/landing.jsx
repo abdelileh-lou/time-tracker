@@ -74,17 +74,19 @@ const Landing = () => {
   return (
     <>
       <Hero />
-      <div className="w-auto flex flex-col items-center justify-center py-[85px]">
-        <h1 className="font-black text-[38px]">Time management features</h1>
-        <p className="pt-10 text-lg">
+      <div className="w-auto flex flex-col items-center justify-center py-[85px] bg-blue-50">
+        <h1 className="font-black text-[38px] text-sky-950 text-center">
+          Time management features
+        </h1>
+        <p className="pt-10 text-lg text-sky-900 text-center max-w-2xl">
           Track productivity, attendance, and billable hours with a simple time
           tracker and timesheet.
         </p>
       </div>
-      <div className="flex h-screen bg-gray-50">
+      <div className="flex h-screen bg-blue-50">
         {/* Left Panel */}
-        <div className="w-1/3 p-8 border-r border-gray-200">
-          <h1 className="text-3xl font-bold mb-8">Timekeeping</h1>
+        <div className="w-1/3 p-4 border-r border-sky-200 bg-white">
+          <h1 className="text-2xl font-bold mb-4 text-sky-950">Timekeeping</h1>
 
           {/* Feature Options */}
           {featureOptions.map((option) => (
@@ -103,7 +105,7 @@ const Landing = () => {
         </div>
 
         {/* Right Panel */}
-        <div className="w-2/3 bg-blue-50 p-8 flex items-center justify-center relative">
+        <div className="w-2/3 bg-sky-50 p-4 flex items-center justify-center relative">
           {/* Show the hovered item preview */}
           {getHoverView()}
 

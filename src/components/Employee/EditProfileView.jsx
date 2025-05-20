@@ -106,16 +106,16 @@ const EditProfileView = ({ employee, setEmployee }) => {
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">Modifier Mon Profil</h2>
+      <h2 className="text-2xl font-bold mb-6 text-sky-800">Modifier Mon Profil</h2>
 
       {success && (
-        <div className="mb-4 p-4 bg-green-100 text-green-700 rounded">
+        <div className="mb-4 p-4 bg-teal-100 text-teal-700 rounded">
           Votre profil a été mis à jour avec succès!
         </div>
       )}
 
       {error && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">
+        <div className="mb-4 p-4 bg-sky-100 text-sky-700 rounded">
           Erreur: {error}
         </div>
       )}
@@ -126,9 +126,9 @@ const EditProfileView = ({ employee, setEmployee }) => {
             <img
               src={photoPreview || "https://via.placeholder.com/150"}
               alt="Profile"
-              className="w-32 h-32 rounded-full object-cover border-2 border-gray-200"
+              className="w-32 h-32 rounded-full object-cover border-2 border-slate-200"
             />
-            <label className="absolute bottom-0 right-0 bg-blue-500 p-2 rounded-full cursor-pointer hover:bg-blue-600">
+            <label className="absolute bottom-0 right-0 bg-sky-500 p-2 rounded-full cursor-pointer hover:bg-sky-600">
               <input
                 type="file"
                 accept="image/*"
@@ -154,7 +154,7 @@ const EditProfileView = ({ employee, setEmployee }) => {
           <div>
             <label
               htmlFor="name"
-              className="block mb-2 text-sm font-medium text-gray-700">
+              className="block mb-2 text-sm font-medium text-slate-700">
               Nom Complet
             </label>
             <input
@@ -163,7 +163,7 @@ const EditProfileView = ({ employee, setEmployee }) => {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-3 border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500"
               required
             />
           </div>
@@ -171,7 +171,7 @@ const EditProfileView = ({ employee, setEmployee }) => {
           <div>
             <label
               htmlFor="email"
-              className="block mb-2 text-sm font-medium text-gray-700">
+              className="block mb-2 text-sm font-medium text-slate-700">
               Email
             </label>
             <input
@@ -180,7 +180,7 @@ const EditProfileView = ({ employee, setEmployee }) => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-3 border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500"
               required
             />
           </div>
@@ -188,7 +188,7 @@ const EditProfileView = ({ employee, setEmployee }) => {
           <div>
             <label
               htmlFor="password"
-              className="block mb-2 text-sm font-medium text-gray-700">
+              className="block mb-2 text-sm font-medium text-slate-700">
               Nouveau Mot de Passe
             </label>
             <input
@@ -197,14 +197,14 @@ const EditProfileView = ({ employee, setEmployee }) => {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-3 border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500"
             />
           </div>
 
           <div>
             <label
               htmlFor="confirmPassword"
-              className="block mb-2 text-sm font-medium text-gray-700">
+              className="block mb-2 text-sm font-medium text-slate-700">
               Confirmer le Mot de Passe
             </label>
             <input
@@ -213,7 +213,7 @@ const EditProfileView = ({ employee, setEmployee }) => {
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-3 border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500"
             />
           </div>
         </div>
@@ -222,7 +222,7 @@ const EditProfileView = ({ employee, setEmployee }) => {
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50">
+            className="px-6 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 disabled:opacity-50">
             {loading ? "Enregistrement..." : "Enregistrer les modifications"}
           </button>
         </div>

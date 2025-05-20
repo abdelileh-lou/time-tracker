@@ -101,26 +101,26 @@ export default function PlanningView({ employee }) {
   return (
     <div className="p-4 mx-auto">
       {/* Planning name at top */}
-      <h1 className="text-2xl font-bold mb-2 text-center">
+      <h1 className="text-2xl font-bold mb-2 text-center text-sky-800">
         Planning : {planData.name}
       </h1>
 
       {/* Employee info and hours summary */}
       <div className="flex justify-between items-center mb-6">
         <div className="text-lg font-medium">
-          <span className="text-gray-600">Employee: </span>
-          <span>{employee.username}</span>
+          <span className="text-sky-600">Employee: </span>
+          <span className="text-sky-800">{employee.username}</span>
         </div>
         <div className="flex gap-6">
           <div>
-            <span className="text-gray-600">Weekly Hours: </span>
-            <span className="font-medium">
+            <span className="text-sky-600">Weekly Hours: </span>
+            <span className="font-medium text-sky-800">
               {calculateWeeklyHours(planData.days)} hrs
             </span>
           </div>
           <div>
-            <span className="text-gray-600">Monthly Hours: </span>
-            <span className="font-medium">
+            <span className="text-sky-600">Monthly Hours: </span>
+            <span className="font-medium text-sky-800">
               {calculateMonthlyHours(planData.days)} hrs
             </span>
           </div>
@@ -138,21 +138,21 @@ export default function PlanningView({ employee }) {
               key={index}
               className={`p-3 rounded-lg shadow h-full flex flex-col ${
                 day.isWorkDay
-                  ? "bg-green-100 border-t-4 border-green-500"
-                  : "bg-gray-100"
+                  ? "bg-teal-50 border-t-4 border-teal-500"
+                  : "bg-rose-50 border-t-4 border-rose-300"
               }`}>
-              <div className="font-bold text-center mb-1">{dayName}</div>
-              <div className="text-xs text-center text-gray-600 mb-2">
+              <div className="font-bold text-center mb-1 text-sky-800">{dayName}</div>
+              <div className="text-xs text-center text-sky-600 mb-2">
                 {formatDate(date)}
               </div>
               {day.isWorkDay ? (
                 <div className="mt-auto text-center">
-                  <span className="text-green-700 text-sm">
+                  <span className="text-teal-700 text-sm">
                     {day.from} - {day.to}
                   </span>
                 </div>
               ) : (
-                <div className="text-gray-500 mt-auto text-center text-sm">
+                <div className="text-rose-500 mt-auto text-center text-sm">
                   Day off
                 </div>
               )}
@@ -162,13 +162,13 @@ export default function PlanningView({ employee }) {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 text-sm mt-4">
+      <div className="flex items-center gap-4 text-sm mt-4 text-sky-800">
         <div className="flex items-center">
-          <div className="w-4 h-4 bg-green-100 border border-green-500 mr-2"></div>
+          <div className="w-4 h-4 bg-teal-50 border border-teal-500 mr-2"></div>
           <span>Working day</span>
         </div>
         <div className="flex items-center">
-          <div className="w-4 h-4 bg-gray-100 border border-gray-300 mr-2"></div>
+          <div className="w-4 h-4 bg-rose-50 border border-rose-300 mr-2"></div>
           <span>Day off</span>
         </div>
       </div>

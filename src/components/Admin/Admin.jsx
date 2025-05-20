@@ -346,16 +346,16 @@ const Admin = () => {
   };
 
   return (
-    <div className="flex h-screen bg-emerald-50">
+    <div className="flex h-screen bg-sky-50">
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg">
-        <div className="p-6 border-b border-emerald-100">
+        <div className="p-6 border-b border-sky-100">
           <div className="flex items-center gap-2 mb-4">
-            <Monitor size="2rem" className="text-emerald-600" />
-            <CalendarClock size="2rem" className="text-emerald-600" />
+            <Monitor size="2rem" className="text-sky-600" />
+            <CalendarClock size="2rem" className="text-sky-600" />
           </div>
-          <h1 className="text-2xl font-bold text-emerald-800">Admin</h1>
-          <p className="text-sm text-emerald-600">NTIC Management</p>
+          <h1 className="text-2xl font-bold text-sky-800">Admin</h1>
+          <p className="text-sm text-sky-600">NTIC Management</p>
         </div>
 
         <nav className="p-4">
@@ -365,8 +365,8 @@ const Admin = () => {
                 onClick={() => setActiveSection("dashboard")}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
                   activeSection === "dashboard"
-                    ? "bg-emerald-100 text-emerald-800"
-                    : "text-emerald-600 hover:bg-emerald-50"
+                    ? "bg-sky-100 text-sky-800"
+                    : "text-sky-600 hover:bg-sky-50"
                 }`}>
                 <Users size={20} />
                 <span>Dashboard</span>
@@ -377,8 +377,8 @@ const Admin = () => {
                 onClick={() => setActiveSection("employees")}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
                   activeSection === "employees"
-                    ? "bg-emerald-100 text-emerald-800"
-                    : "text-emerald-600 hover:bg-emerald-50"
+                    ? "bg-sky-100 text-sky-800"
+                    : "text-sky-600 hover:bg-sky-50"
                 }`}>
                 <Users size={20} />
                 <span>Employees</span>
@@ -389,8 +389,8 @@ const Admin = () => {
                 onClick={() => setActiveSection("attendance")}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
                   activeSection === "attendance"
-                    ? "bg-emerald-100 text-emerald-800"
-                    : "text-emerald-600 hover:bg-emerald-50"
+                    ? "bg-sky-100 text-sky-800"
+                    : "text-sky-600 hover:bg-sky-50"
                 }`}>
                 <CalendarClock size={20} />
                 <span>Attendance</span>
@@ -401,8 +401,8 @@ const Admin = () => {
                 onClick={() => setActiveSection("settings")}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
                   activeSection === "settings"
-                    ? "bg-emerald-100 text-emerald-800"
-                    : "text-emerald-600 hover:bg-emerald-50"
+                    ? "bg-sky-100 text-sky-800"
+                    : "text-sky-600 hover:bg-sky-50"
                 }`}>
                 <Settings size={20} />
                 <span>Settings</span>
@@ -425,7 +425,7 @@ const Admin = () => {
       <div className="flex-1 overflow-auto p-8">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="text-emerald-600">Loading...</div>
+            <div className="text-sky-600">Loading...</div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -433,22 +433,19 @@ const Admin = () => {
             {activeSection === "dashboard" && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300">
-                  <h3 className="text-lg font-semibold text-emerald-800 mb-2">
+                  <h3 className="text-lg font-semibold text-sky-800 mb-2">
                     Total Employees
                   </h3>
-                  <p className="text-3xl font-bold text-emerald-600">
+                  <p className="text-3xl font-bold text-indigo-600">
                     {employees.length}
                   </p>
                 </div>
                 <div className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300">
-                  <h3 className="text-lg font-semibold text-emerald-800 mb-2">
+                  <h3 className="text-lg font-semibold text-sky-800 mb-2">
                     Active Attendance Methods
                   </h3>
-                  <p className="text-3xl font-bold text-emerald-600">
-                    {
-                      Object.values(attendanceMethods).filter((m) => m.active)
-                        .length
-                    }
+                  <p className="text-3xl font-bold text-indigo-600">
+                    {Object.values(attendanceMethods).filter((m) => m.active).length}
                   </p>
                 </div>
               </div>
@@ -458,19 +455,19 @@ const Admin = () => {
             {activeSection === "employees" && (
               <div className="space-y-6">
                 <div className="bg-white p-6 rounded-xl shadow-md">
-                  <h2 className="text-2xl font-bold text-emerald-800 mb-6">
+                  <h2 className="text-2xl font-bold text-sky-800 mb-6">
                     Employee Management
                   </h2>
 
                   {/* Add Employee Form */}
-                  <div className="bg-emerald-50 p-6 rounded-lg mb-6">
-                    <h3 className="text-xl font-semibold text-emerald-800 mb-4">
+                  <div className="bg-sky-50 p-6 rounded-lg mb-6">
+                    <h3 className="text-xl font-semibold text-sky-800 mb-4">
                       Add New Employee
                     </h3>
                     <form onSubmit={addEmployee} className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-emerald-700 mb-1">
+                          <label className="block text-sm font-medium text-slate-700 mb-1">
                             Name
                           </label>
                           <input
@@ -482,12 +479,12 @@ const Admin = () => {
                                 name: e.target.value,
                               })
                             }
-                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                             required
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-emerald-700 mb-1">
+                          <label className="block text-sm font-medium text-slate-700 mb-1">
                             Email
                           </label>
                           <input
@@ -499,12 +496,12 @@ const Admin = () => {
                                 email: e.target.value,
                               })
                             }
-                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                             required
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-emerald-700 mb-1">
+                          <label className="block text-sm font-medium text-slate-700 mb-1">
                             Username
                           </label>
                           <input
@@ -516,12 +513,12 @@ const Admin = () => {
                                 username: e.target.value,
                               })
                             }
-                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                             required
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-emerald-700 mb-1">
+                          <label className="block text-sm font-medium text-slate-700 mb-1">
                             Password
                           </label>
                           <input
@@ -533,12 +530,12 @@ const Admin = () => {
                                 password: e.target.value,
                               })
                             }
-                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                             required
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-emerald-700 mb-1">
+                          <label className="block text-sm font-medium text-slate-700 mb-1">
                             Role
                           </label>
                           <select
@@ -549,7 +546,7 @@ const Admin = () => {
                                 role: e.target.value,
                               })
                             }
-                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                             required>
                             {employeeRoles.map((role) => (
                               <option key={role.id} value={role.id}>
@@ -559,7 +556,7 @@ const Admin = () => {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-emerald-700 mb-1">
+                          <label className="block text-sm font-medium text-slate-700 mb-1">
                             Service
                           </label>
                           <select
@@ -570,7 +567,7 @@ const Admin = () => {
                                 service: e.target.value,
                               })
                             }
-                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                             required>
                             {services.map((service) => (
                               <option key={service.id} value={service.id}>
@@ -584,7 +581,7 @@ const Admin = () => {
                       {/* Facial Recognition Section */}
                       <div className="mt-6">
                         <div className="flex items-center justify-between mb-4">
-                          <h4 className="text-lg font-medium text-emerald-800">
+                          <h4 className="text-lg font-medium text-sky-800">
                             Facial Recognition
                           </h4>
                           <button
@@ -592,7 +589,7 @@ const Admin = () => {
                             onClick={() =>
                               setShowFacialRecognition(!showFacialRecognition)
                             }
-                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                            className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
                             {showFacialRecognition
                               ? "Hide"
                               : "Add Facial Recognition"}
@@ -600,7 +597,7 @@ const Admin = () => {
                         </div>
 
                         {showFacialRecognition && (
-                          <div className="border border-emerald-200 p-4 rounded-lg">
+                          <div className="border border-sky-200 p-4 rounded-lg">
                             <div className="relative">
                               <video
                                 ref={videoRef}
@@ -608,7 +605,7 @@ const Admin = () => {
                                 height={videoDimensions.height}
                                 autoPlay
                                 muted
-                                className="w-full h-64 bg-emerald-100 rounded-lg mb-4"
+                                className="w-full h-64 bg-sky-100 rounded-lg mb-4"
                               />
                               <canvas
                                 ref={canvasRef}
@@ -622,13 +619,13 @@ const Admin = () => {
                               <button
                                 type="button"
                                 onClick={handleDetectFaces}
-                                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                                className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors"
                                 disabled={loading}>
                                 {loading ? "Detecting..." : "Detect Face"}
                               </button>
 
                               {detections.length > 0 && (
-                                <div className="bg-emerald-100 text-emerald-800 px-3 py-2 rounded-lg flex items-center">
+                                <div className="bg-sky-100 text-sky-800 px-3 py-2 rounded-lg flex items-center">
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     className="h-5 w-5 mr-1"
@@ -655,7 +652,7 @@ const Admin = () => {
                       <div className="mt-6">
                         <button
                           type="submit"
-                          className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                          className="w-full px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
                           Add Employee
                         </button>
                       </div>
@@ -664,29 +661,29 @@ const Admin = () => {
 
                   {/* Employee List */}
                   <div className="mt-6">
-                    <h3 className="text-xl font-semibold text-emerald-800 mb-4">
+                    <h3 className="text-xl font-semibold text-sky-800 mb-4">
                       Employee List
                     </h3>
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead>
-                          <tr className="bg-emerald-50">
-                            <th className="px-4 py-2 text-left text-emerald-800">
+                          <tr className="bg-sky-50">
+                            <th className="px-4 py-2 text-left text-sky-800">
                               Name
                             </th>
-                            <th className="px-4 py-2 text-left text-emerald-800">
+                            <th className="px-4 py-2 text-left text-sky-800">
                               Email
                             </th>
-                            <th className="px-4 py-2 text-left text-emerald-800">
+                            <th className="px-4 py-2 text-left text-sky-800">
                               Role
                             </th>
-                            <th className="px-4 py-2 text-left text-emerald-800">
+                            <th className="px-4 py-2 text-left text-sky-800">
                               Service
                             </th>
-                            <th className="px-4 py-2 text-left text-emerald-800">
+                            <th className="px-4 py-2 text-left text-sky-800">
                               Facial
                             </th>
-                            <th className="px-4 py-2 text-left text-emerald-800">
+                            <th className="px-4 py-2 text-left text-sky-800">
                               Actions
                             </th>
                           </tr>
@@ -695,14 +692,14 @@ const Admin = () => {
                           {employees.map((employee) => (
                             <tr
                               key={employee.id}
-                              className="border-b border-emerald-100 hover:bg-emerald-50">
+                              className="border-b border-sky-100 hover:bg-sky-50">
                               <td className="px-4 py-2">{employee.name}</td>
                               <td className="px-4 py-2">{employee.email}</td>
                               <td className="px-4 py-2">{employee.role}</td>
                               <td className="px-4 py-2">{employee.service}</td>
                               <td className="px-4 py-2 text-center">
                                 {employee.facialData ? (
-                                  <span className="text-emerald-600">✓</span>
+                                  <span className="text-sky-600">✓</span>
                                 ) : (
                                   <span className="text-red-600">✗</span>
                                 )}
@@ -727,12 +724,12 @@ const Admin = () => {
             {/* Attendance Section */}
             {activeSection === "attendance" && (
               <div className="bg-white p-6 rounded-xl shadow-md">
-                <h2 className="text-2xl font-bold text-emerald-800 mb-6">
+                <h2 className="text-2xl font-bold text-sky-800 mb-6">
                   Attendance Settings
                 </h2>
                 <div className="space-y-6">
-                  <div className="p-4 bg-emerald-50 rounded-lg">
-                    <h3 className="text-lg font-semibold text-emerald-800 mb-4">
+                  <div className="p-4 bg-sky-50 rounded-lg">
+                    <h3 className="text-lg font-semibold text-sky-800 mb-4">
                       Active Methods
                     </h3>
                     <div className="space-y-4">
@@ -741,7 +738,7 @@ const Admin = () => {
                           <div
                             key={method}
                             className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
-                            <span className="text-emerald-700">
+                            <span className="text-slate-700">
                               {method === "qrCode"
                                 ? "QR Code"
                                 : method === "facialRecognition"
@@ -754,9 +751,9 @@ const Admin = () => {
                                   type="checkbox"
                                   checked={config.active}
                                   onChange={() => handleMethodToggle(method)}
-                                  className="form-checkbox h-5 w-5 text-emerald-600"
+                                  className="form-checkbox h-5 w-5 text-sky-600"
                                 />
-                                <span className="text-sm text-emerald-600">
+                                <span className="text-sm text-sky-600">
                                   Active
                                 </span>
                               </label>
@@ -768,7 +765,7 @@ const Admin = () => {
                                     parseInt(e.target.value),
                                   )
                                 }
-                                className="form-select px-3 py-1 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                className="form-select px-3 py-1 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500">
                                 <option value={1}>Primary</option>
                                 <option value={2}>Secondary</option>
                                 <option value={3}>Tertiary</option>
@@ -782,7 +779,7 @@ const Admin = () => {
                     <div className="mt-4">
                       <button
                         onClick={saveMethodsConfig}
-                        className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                        className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
                         Save Configuration
                       </button>
                     </div>
@@ -790,18 +787,18 @@ const Admin = () => {
 
                   {/* Manager View Section */}
                   <div className="mt-6 bg-white p-6 rounded-lg shadow-sm">
-                    <h3 className="text-lg font-semibold text-emerald-800 mb-4">
+                    <h3 className="text-lg font-semibold text-sky-800 mb-4">
                       Manager View - Priority Method
                     </h3>
                     {getHighestPriorityMethod() ? (
-                      <div className="p-4 border-l-4 border-emerald-500 bg-emerald-50">
-                        <p className="font-medium text-emerald-800">
+                      <div className="p-4 border-l-4 border-sky-500 bg-sky-50">
+                        <p className="font-medium text-sky-800">
                           Active Method:{" "}
                           <span className="font-bold">
                             {getHighestPriorityMethod().name}
                           </span>
                         </p>
-                        <p className="text-sm text-emerald-600 mt-1">
+                        <p className="text-sm text-sky-600 mt-1">
                           This method will be displayed for managers
                         </p>
                       </div>
@@ -820,20 +817,20 @@ const Admin = () => {
                   {/* Saved Configuration */}
                   {savedConfiguration.length > 0 && (
                     <div className="mt-6">
-                      <h4 className="text-lg font-semibold text-emerald-800 mb-3">
+                      <h4 className="text-lg font-semibold text-sky-800 mb-3">
                         Current Configuration
                       </h4>
                       <div className="overflow-x-auto">
                         <table className="w-full">
                           <thead>
-                            <tr className="bg-emerald-50">
-                              <th className="px-4 py-2 text-left text-emerald-800">
+                            <tr className="bg-sky-50">
+                              <th className="px-4 py-2 text-left text-sky-800">
                                 Method Type
                               </th>
-                              <th className="px-4 py-2 text-left text-emerald-800">
+                              <th className="px-4 py-2 text-left text-sky-800">
                                 Status
                               </th>
-                              <th className="px-4 py-2 text-left text-emerald-800">
+                              <th className="px-4 py-2 text-left text-sky-800">
                                 Priority
                               </th>
                             </tr>
@@ -842,11 +839,11 @@ const Admin = () => {
                             {savedConfiguration.map((config, index) => (
                               <tr
                                 key={index}
-                                className="border-b border-emerald-100">
+                                className="border-b border-sky-100">
                                 <td className="px-4 py-2">{config.type}</td>
                                 <td className="px-4 py-2">
                                   {config.active ? (
-                                    <span className="text-emerald-600">
+                                    <span className="text-sky-600">
                                       Active
                                     </span>
                                   ) : (
@@ -876,58 +873,58 @@ const Admin = () => {
             {/* Settings Section */}
             {activeSection === "settings" && (
               <div className="bg-white p-6 rounded-xl shadow-md">
-                <h2 className="text-2xl font-bold text-emerald-800 mb-6">
+                <h2 className="text-2xl font-bold text-sky-800 mb-6">
                   Profile Settings
                 </h2>
                 <div className="space-y-6">
-                  <div className="p-4 bg-emerald-50 rounded-lg">
-                    <h3 className="text-lg font-semibold text-emerald-800 mb-4">
+                  <div className="p-4 bg-sky-50 rounded-lg">
+                    <h3 className="text-lg font-semibold text-sky-800 mb-4">
                       Profile Information
                     </h3>
                     {admin && (
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm font-medium text-emerald-700 mb-1">
+                          <label className="block text-sm font-medium text-slate-700 mb-1">
                             Name
                           </label>
                           <input
                             type="text"
                             value={admin.name}
-                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                             readOnly
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-emerald-700 mb-1">
+                          <label className="block text-sm font-medium text-slate-700 mb-1">
                             Email
                           </label>
                           <input
                             type="email"
                             value={admin.email}
-                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                             readOnly
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-emerald-700 mb-1">
+                          <label className="block text-sm font-medium text-slate-700 mb-1">
                             Username
                           </label>
                           <input
                             type="text"
                             value={admin.username}
-                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                             readOnly
                           />
                         </div>
                         <div className="flex gap-4">
                           <button
                             onClick={() => setActiveSection("editProfile")}
-                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                            className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
                             Edit Profile
                           </button>
                           <button
                             onClick={() => setActiveSection("changePassword")}
-                            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                            className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
                             Change Password
                           </button>
                         </div>
@@ -941,17 +938,17 @@ const Admin = () => {
             {/* Edit Profile Section */}
             {activeSection === "editProfile" && (
               <div className="bg-white p-6 rounded-xl shadow-md">
-                <h2 className="text-2xl font-bold text-emerald-800 mb-6">
+                <h2 className="text-2xl font-bold text-sky-800 mb-6">
                   Edit Profile
                 </h2>
                 <div className="space-y-6">
-                  <div className="p-4 bg-emerald-50 rounded-lg">
-                    <h3 className="text-lg font-semibold text-emerald-800 mb-4">
+                  <div className="p-4 bg-sky-50 rounded-lg">
+                    <h3 className="text-lg font-semibold text-sky-800 mb-4">
                       Update Profile Information
                     </h3>
                     <form className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-emerald-700 mb-1">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
                           Name
                         </label>
                         <input
@@ -960,11 +957,11 @@ const Admin = () => {
                           onChange={(e) =>
                             setAdmin({ ...admin, name: e.target.value })
                           }
-                          className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-emerald-700 mb-1">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
                           Email
                         </label>
                         <input
@@ -973,12 +970,12 @@ const Admin = () => {
                           onChange={(e) =>
                             setAdmin({ ...admin, email: e.target.value })
                           }
-                          className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                         />
                       </div>
                       <button
                         type="submit"
-                        className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                        className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
                         Save Changes
                       </button>
                     </form>
@@ -990,45 +987,45 @@ const Admin = () => {
             {/* Change Password Section */}
             {activeSection === "changePassword" && (
               <div className="bg-white p-6 rounded-xl shadow-md">
-                <h2 className="text-2xl font-bold text-emerald-800 mb-6">
+                <h2 className="text-2xl font-bold text-sky-800 mb-6">
                   Change Password
                 </h2>
                 <div className="space-y-6">
-                  <div className="p-4 bg-emerald-50 rounded-lg">
-                    <h3 className="text-lg font-semibold text-emerald-800 mb-4">
+                  <div className="p-4 bg-sky-50 rounded-lg">
+                    <h3 className="text-lg font-semibold text-sky-800 mb-4">
                       Update Password
                     </h3>
                     <form className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-emerald-700 mb-1">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
                           Current Password
                         </label>
                         <input
                           type="password"
-                          className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-emerald-700 mb-1">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
                           New Password
                         </label>
                         <input
                           type="password"
-                          className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-emerald-700 mb-1">
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
                           Confirm New Password
                         </label>
                         <input
                           type="password"
-                          className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                          className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                         />
                       </div>
                       <button
                         type="submit"
-                        className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                        className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
                         Update Password
                       </button>
                     </form>

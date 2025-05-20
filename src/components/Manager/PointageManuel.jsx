@@ -326,32 +326,32 @@ const PointageManuel = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full bg-white border border-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full bg-white border border-cyan-200">
+              <thead className="bg-cyan-50">
                 <tr>
-                  <th className="py-3 px-4 border-b text-left">ID</th>
-                  <th className="py-3 px-4 border-b text-left">Nom</th>
-                  <th className="py-3 px-4 border-b text-left">Heure</th>
-                  <th className="py-3 px-4 border-b text-left">Statut</th>
-                  <th className="py-3 px-4 border-b text-left">Signalé au Chef</th>
-                  <th className="py-3 px-4 border-b text-left">Actions</th>
+                  <th className="py-3 px-4 border-b border-cyan-200 text-left text-cyan-800">ID</th>
+                  <th className="py-3 px-4 border-b border-cyan-200 text-left text-cyan-800">Nom</th>
+                  <th className="py-3 px-4 border-b border-cyan-200 text-left text-cyan-800">Heure</th>
+                  <th className="py-3 px-4 border-b border-cyan-200 text-left text-cyan-800">Statut</th>
+                  <th className="py-3 px-4 border-b border-cyan-200 text-left text-cyan-800">Signalé au Chef</th>
+                  <th className="py-3 px-4 border-b border-cyan-200 text-left text-cyan-800">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {attendanceRecords.map((record, index) => (
-                  <tr key={index} className={index % 2 === 0 ? "bg-gray-50" : ""}>
-                    <td className="py-2 px-4 border-b">{record.employeeId}</td>
-                    <td className="py-2 px-4 border-b">{record.employeeName}</td>
-                    <td className="py-2 px-4 border-b">
+                  <tr key={index} className={index % 2 === 0 ? "bg-cyan-50" : "hover:bg-cyan-50"}>
+                    <td className="py-2 px-4 border-b border-cyan-100 text-cyan-700">{record.employeeId}</td>
+                    <td className="py-2 px-4 border-b border-cyan-100 text-cyan-700">{record.employeeName}</td>
+                    <td className="py-2 px-4 border-b border-cyan-100 text-cyan-700">
                       {new Date(record.timestamp).toLocaleTimeString()}
                     </td>
-                    <td className="py-2 px-4 border-b">
+                    <td className="py-2 px-4 border-b border-cyan-100 text-cyan-700">
                       {translateStatus(record.status)}
                     </td>
-                    <td className="py-2 px-4 border-b">
+                    <td className="py-2 px-4 border-b border-cyan-100 text-cyan-700">
                       {record.reportedChef ? "Oui" : "Non"}
                     </td>
-                    <td className="py-2 px-4 border-b">
+                    <td className="py-2 px-4 border-b border-cyan-100">
                       <button
                         onClick={() => handleDeleteRecord(record.id)}
                         className="text-red-600 hover:text-red-800 focus:outline-none"

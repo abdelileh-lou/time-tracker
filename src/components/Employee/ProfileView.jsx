@@ -32,16 +32,16 @@ const ProfileView = ({ employee }) => {
     <div className="max-w-4xl mx-auto">
       <div className="bg-white rounded-xl shadow-md overflow-hidden">
         {/* Profile Header */}
-        <div className="bg-emerald-600 p-6 text-white">
+        <div className="bg-cyan-600 p-6 text-white">
           <div className="flex items-center gap-4">
             <div className="bg-white/20 rounded-full p-3">
               <User size={32} />
             </div>
             <div>
               <h2 className="text-2xl font-bold">{employee.name}</h2>
-              <p className="text-emerald-100">{employee.email}</p>
+              <p className="text-cyan-100">{employee.email}</p>
               {employee.username && (
-                <p className="text-emerald-100">@{employee.username}</p>
+                <p className="text-cyan-100">@{employee.username}</p>
               )}
             </div>
           </div>
@@ -51,24 +51,24 @@ const ProfileView = ({ employee }) => {
         <div className="p-6 space-y-6">
           {/* Personal Information */}
           <div>
-            <h3 className="text-lg font-semibold text-emerald-800 mb-4">
+            <h3 className="text-lg font-semibold text-cyan-800 mb-4">
               Personal Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg">
-                <Mail className="text-emerald-600" size={20} />
+              <div className="flex items-center gap-3 p-3 bg-cyan-50 rounded-lg">
+                <Mail className="text-cyan-600" size={20} />
                 <div>
-                  <p className="text-sm text-emerald-600">Email</p>
-                  <p className="font-medium text-emerald-800">
+                  <p className="text-sm text-cyan-600">Email</p>
+                  <p className="font-medium text-cyan-800">
                     {employee.email}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg">
-                <Building className="text-emerald-600" size={20} />
+              <div className="flex items-center gap-3 p-3 bg-cyan-50 rounded-lg">
+                <Building className="text-cyan-600" size={20} />
                 <div>
-                  <p className="text-sm text-emerald-600">Department</p>
-                  <p className="font-medium text-emerald-800">
+                  <p className="text-sm text-cyan-600">Department</p>
+                  <p className="font-medium text-cyan-800">
                     {employee.department?.name || "Not assigned"}
                   </p>
                 </div>
@@ -78,22 +78,22 @@ const ProfileView = ({ employee }) => {
 
           {/* PIN Code Section */}
           <div>
-            <h3 className="text-lg font-semibold text-emerald-800 mb-4">
+            <h3 className="text-lg font-semibold text-cyan-800 mb-4">
               Security PIN Code
             </h3>
-            <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-lg">
-              <Key className="text-emerald-600" size={20} />
+            <div className="flex items-center gap-3 p-4 bg-cyan-50 rounded-lg">
+              <Key className="text-cyan-600" size={20} />
               <div className="flex-1">
-                <p className="text-sm text-emerald-600">Your Unique PIN</p>
+                <p className="text-sm text-cyan-600">Your Unique PIN</p>
                 <div className="flex items-center gap-2">
                   {loading ? (
-                    <p className="text-emerald-600">Loading PIN code...</p>
+                    <p className="text-cyan-600">Loading PIN code...</p>
                   ) : (
                     <>
-                      <p className="font-medium text-emerald-800">
+                      <p className="font-medium text-cyan-800">
                         {pinCode || "Not available"}
                       </p>
-                      <span className="text-xs text-emerald-600">
+                      <span className="text-xs text-cyan-600">
                         (Confidential security identifier)
                       </span>
                     </>
@@ -105,21 +105,21 @@ const ProfileView = ({ employee }) => {
 
           {/* Additional Information */}
           <div>
-            <h3 className="text-lg font-semibold text-emerald-800 mb-4">
+            <h3 className="text-lg font-semibold text-cyan-800 mb-4">
               Additional Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg">
+              <div className="flex items-center gap-3 p-3 bg-cyan-50 rounded-lg">
                 <div>
-                  <p className="text-sm text-emerald-600">Employee ID</p>
-                  <p className="font-medium text-emerald-800">{employee.id}</p>
+                  <p className="text-sm text-cyan-600">Employee ID</p>
+                  <p className="font-medium text-cyan-800">{employee.id}</p>
                 </div>
               </div>
               {employee.username && (
-                <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg">
+                <div className="flex items-center gap-3 p-3 bg-cyan-50 rounded-lg">
                   <div>
-                    <p className="text-sm text-emerald-600">Username</p>
-                    <p className="font-medium text-emerald-800">
+                    <p className="text-sm text-cyan-600">Username</p>
+                    <p className="font-medium text-cyan-800">
                       @{employee.username}
                     </p>
                   </div>

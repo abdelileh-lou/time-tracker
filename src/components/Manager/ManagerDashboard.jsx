@@ -5,8 +5,17 @@ import QrCodeGenerator from "./QrCodeGenerator";
 import PointageManuel from "./PointageManuel";
 import ProfileView from "../Employee/ProfileView";
 import EditProfileView from "../Employee/EditProfileView";
-import { Monitor, CalendarClock, Users, Settings, LogOut, ClipboardList, History, User } from "lucide-react";
-import { useSnackbar } from 'notistack';
+import {
+  Monitor,
+  CalendarClock,
+  Users,
+  Settings,
+  LogOut,
+  ClipboardList,
+  History,
+  User,
+} from "lucide-react";
+import { useSnackbar } from "notistack";
 import {
   loadModels,
   detectFaces,
@@ -46,11 +55,11 @@ const ManagerDashboard = () => {
   const [attendanceMethods, setAttendanceMethods] = useState({
     qrCode: { active: true, priority: 1 },
     facialRecognition: { active: true, priority: 2 },
-    pinCode: { active: true, priority: 3 }
+    pinCode: { active: true, priority: 3 },
   });
   const [pinAttendance, setPinAttendance] = useState({
     employeeId: "",
-    pinCode: ""
+    pinCode: "",
   });
   const [pinError, setPinError] = useState("");
   const [pinSuccess, setPinSuccess] = useState("");
@@ -74,12 +83,12 @@ const ManagerDashboard = () => {
     const setupCamera = async () => {
       if (isCameraActive && videoRef.current) {
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { 
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
               width: 640,
               height: 480,
-              facingMode: "user"
-            } 
+              facingMode: "user",
+            },
           });
           videoRef.current.srcObject = stream;
           streamRef.current = stream;
@@ -88,7 +97,7 @@ const ManagerDashboard = () => {
           setIsCameraActive(false);
         }
       } else if (!isCameraActive && streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current.getTracks().forEach((track) => track.stop());
         if (videoRef.current) {
           videoRef.current.srcObject = null;
         }
@@ -224,7 +233,9 @@ const ManagerDashboard = () => {
   useEffect(() => {
     const fetchAttendanceMethods = async () => {
       try {
-        const response = await axios.get("http://localhost:8092/api/attendance-methods");
+        const response = await axios.get(
+          "http://localhost:8092/api/attendance-methods",
+        );
         setAttendanceMethods(response.data);
       } catch (error) {
         console.error("Error fetching attendance methods:", error);
@@ -257,7 +268,9 @@ const ManagerDashboard = () => {
         }
       } else {
         setVerificationStatus("error");
-        setVerificationMessage("No face detected. Please ensure your face is clearly visible in the camera.");
+        setVerificationMessage(
+          "No face detected. Please ensure your face is clearly visible in the camera.",
+        );
       }
     } catch (error) {
       console.error("Error detecting faces:", error);
@@ -268,22 +281,22 @@ const ManagerDashboard = () => {
 
   const handleFacialDataCapture = async (liveDescriptor) => {
     if (!employeeId) {
-      enqueueSnackbar("Please enter Employee ID first", { 
-        variant: 'error',
+      enqueueSnackbar("Please enter Employee ID first", {
+        variant: "error",
         anchorOrigin: {
-          vertical: 'top',
-          horizontal: 'right',
+          vertical: "top",
+          horizontal: "right",
         },
       });
       return;
     }
 
     if (!storedFacialData) {
-      enqueueSnackbar("No registered facial data for this employee", { 
-        variant: 'error',
+      enqueueSnackbar("No registered facial data for this employee", {
+        variant: "error",
         anchorOrigin: {
-          vertical: 'top',
-          horizontal: 'right',
+          vertical: "top",
+          horizontal: "right",
         },
       });
       return;
@@ -317,11 +330,11 @@ const ManagerDashboard = () => {
               ...prevRecords,
               response.data,
             ]);
-            enqueueSnackbar("Attendance recorded successfully!", { 
-              variant: 'success',
+            enqueueSnackbar("Attendance recorded successfully!", {
+              variant: "success",
               anchorOrigin: {
-                vertical: 'top',
-                horizontal: 'right',
+                vertical: "top",
+                horizontal: "right",
               },
             });
           }
@@ -332,34 +345,38 @@ const ManagerDashboard = () => {
             "Failed to record attendance: " +
               (error.response?.data?.message || error.message),
           );
-          enqueueSnackbar("Failed to record attendance", { 
-            variant: 'error',
+          enqueueSnackbar("Failed to record attendance", {
+            variant: "error",
             anchorOrigin: {
-              vertical: 'top',
-              horizontal: 'right',
+              vertical: "top",
+              horizontal: "right",
             },
           });
         }
       } else {
         setVerificationStatus("error");
-        setVerificationMessage("Verification failed - Face mismatch. Please try again.");
-        enqueueSnackbar("Face verification failed", { 
-          variant: 'error',
+        setVerificationMessage(
+          "Verification failed - Face mismatch. Please try again.",
+        );
+        enqueueSnackbar("Face verification failed", {
+          variant: "error",
           anchorOrigin: {
-            vertical: 'top',
-            horizontal: 'right',
+            vertical: "top",
+            horizontal: "right",
           },
         });
       }
     } catch (error) {
       console.error("Verification error:", error);
       setVerificationStatus("error");
-      setVerificationMessage("Error processing verification. Please try again.");
-      enqueueSnackbar("Error processing verification", { 
-        variant: 'error',
+      setVerificationMessage(
+        "Error processing verification. Please try again.",
+      );
+      enqueueSnackbar("Error processing verification", {
+        variant: "error",
         anchorOrigin: {
-          vertical: 'top',
-          horizontal: 'right',
+          vertical: "top",
+          horizontal: "right",
         },
       });
     }
@@ -373,11 +390,11 @@ const ManagerDashboard = () => {
 
   const handleSendReport = async () => {
     if (attendanceRecords.length === 0) {
-      enqueueSnackbar("No attendance records to report", { 
-        variant: 'error',
+      enqueueSnackbar("No attendance records to report", {
+        variant: "error",
         anchorOrigin: {
-          vertical: 'top',
-          horizontal: 'right',
+          vertical: "top",
+          horizontal: "right",
         },
       });
       return;
@@ -394,20 +411,20 @@ const ManagerDashboard = () => {
       setAttendanceRecords((records) =>
         records.map((record) => ({ ...record, reportedChef: true })),
       );
-      enqueueSnackbar("Report sent successfully to chef service!", { 
-        variant: 'success',
+      enqueueSnackbar("Report sent successfully to chef service!", {
+        variant: "success",
         anchorOrigin: {
-          vertical: 'top',
-          horizontal: 'right',
+          vertical: "top",
+          horizontal: "right",
         },
       });
     } catch (error) {
       console.error("Error sending report:", error);
-      enqueueSnackbar("Error sending report. Please try again.", { 
-        variant: 'error',
+      enqueueSnackbar("Error sending report. Please try again.", {
+        variant: "error",
         anchorOrigin: {
-          vertical: 'top',
-          horizontal: 'right',
+          vertical: "top",
+          horizontal: "right",
         },
       });
     } finally {
@@ -452,22 +469,22 @@ const ManagerDashboard = () => {
     setPinSuccess("");
 
     if (!pinAttendance.employeeId) {
-      enqueueSnackbar("Please enter Employee ID first", { 
-        variant: 'error',
+      enqueueSnackbar("Please enter Employee ID first", {
+        variant: "error",
         anchorOrigin: {
-          vertical: 'top',
-          horizontal: 'right',
+          vertical: "top",
+          horizontal: "right",
         },
       });
       return;
     }
 
     if (!pinAttendance.pinCode) {
-      enqueueSnackbar("Please enter PIN code", { 
-        variant: 'error',
+      enqueueSnackbar("Please enter PIN code", {
+        variant: "error",
         anchorOrigin: {
-          vertical: 'top',
-          horizontal: 'right',
+          vertical: "top",
+          horizontal: "right",
         },
       });
       return;
@@ -475,15 +492,15 @@ const ManagerDashboard = () => {
 
     try {
       const response = await axios.get(
-        `http://localhost:8092/api/employee/${pinAttendance.employeeId}/code-pin`
+        `http://localhost:8092/api/employee/${pinAttendance.employeeId}/code-pin`,
       );
 
       if (!response.data) {
-        enqueueSnackbar("No data received from server", { 
-          variant: 'error',
+        enqueueSnackbar("No data received from server", {
+          variant: "error",
           anchorOrigin: {
-            vertical: 'top',
-            horizontal: 'right',
+            vertical: "top",
+            horizontal: "right",
           },
         });
         return;
@@ -491,7 +508,7 @@ const ManagerDashboard = () => {
 
       const enteredPin = String(pinAttendance.pinCode).trim();
       const storedPin = String(response.data).trim();
-      
+
       const isPinValid = enteredPin === storedPin;
 
       if (isPinValid) {
@@ -502,7 +519,7 @@ const ManagerDashboard = () => {
               employeeId: parseInt(pinAttendance.employeeId),
               timestamp: new Date().toISOString(),
               status: "PRESENT",
-            }
+            },
           );
 
           if (attendanceResponse.data) {
@@ -511,49 +528,49 @@ const ManagerDashboard = () => {
               attendanceResponse.data,
             ]);
             setPinAttendance({ employeeId: "", pinCode: "" });
-            enqueueSnackbar("Attendance recorded successfully!", { 
-              variant: 'success',
+            enqueueSnackbar("Attendance recorded successfully!", {
+              variant: "success",
               anchorOrigin: {
-                vertical: 'top',
-                horizontal: 'right',
+                vertical: "top",
+                horizontal: "right",
               },
             });
           }
         } catch (error) {
           console.error("Recording error:", error);
-          enqueueSnackbar("Failed to record attendance", { 
-            variant: 'error',
+          enqueueSnackbar("Failed to record attendance", {
+            variant: "error",
             anchorOrigin: {
-              vertical: 'top',
-              horizontal: 'right',
+              vertical: "top",
+              horizontal: "right",
             },
           });
         }
       } else {
-        enqueueSnackbar("Verification failed - PIN code mismatch", { 
-          variant: 'error',
+        enqueueSnackbar("Verification failed - PIN code mismatch", {
+          variant: "error",
           anchorOrigin: {
-            vertical: 'top',
-            horizontal: 'right',
+            vertical: "top",
+            horizontal: "right",
           },
         });
       }
     } catch (error) {
       console.error("Verification error:", error);
       if (error.response?.status === 404) {
-        enqueueSnackbar("No registered PIN code for this employee", { 
-          variant: 'error',
+        enqueueSnackbar("No registered PIN code for this employee", {
+          variant: "error",
           anchorOrigin: {
-            vertical: 'top',
-            horizontal: 'right',
+            vertical: "top",
+            horizontal: "right",
           },
         });
       } else {
-        enqueueSnackbar("Error processing verification", { 
-          variant: 'error',
+        enqueueSnackbar("Error processing verification", {
+          variant: "error",
           anchorOrigin: {
-            vertical: 'top',
-            horizontal: 'right',
+            vertical: "top",
+            horizontal: "right",
           },
         });
       }
@@ -562,31 +579,35 @@ const ManagerDashboard = () => {
 
   const shouldShowPinCode = () => {
     const pinCodeConfig = attendanceMethods.pinCode;
-    return pinCodeConfig && pinCodeConfig.active && pinCodeConfig.priority === 1;
+    return (
+      pinCodeConfig && pinCodeConfig.active && pinCodeConfig.priority === 1
+    );
   };
 
   return (
-    <div className="flex h-screen bg-emerald-50">
+    <div className="flex h-screen bg-sky-50">
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg">
-        <div className="p-6 border-b border-emerald-100">
+        <div className="p-6 border-b border-sky-100">
           <div className="flex items-center gap-2 mb-4">
-            <Monitor size="2rem" className="text-emerald-600" />
-            <CalendarClock size="2rem" className="text-emerald-600" />
+            <Monitor size="2rem" className="text-sky-600" />
+            <CalendarClock size="2rem" className="text-sky-600" />
           </div>
-          <h1 className="text-2xl font-bold text-emerald-800">Manager</h1>
-          <p className="text-sm text-emerald-600">NTIC Management</p>
+          <h1 className="text-2xl font-bold text-sky-800">Manager</h1>
+          <p className="text-sm text-sky-600">NTIC Management</p>
         </div>
 
         <div className="p-4">
           {manager && (
-            <div className="flex items-center mb-6 p-4 bg-emerald-50 rounded-lg">
-              <div className="bg-emerald-100 rounded-full p-2">
-                <User size={24} className="text-emerald-600" />
+            <div className="flex items-center mb-6 p-4 bg-sky-50 rounded-lg">
+              <div className="bg-sky-100 rounded-full p-2">
+                <User size={24} className="text-sky-600" />
               </div>
               <div className="ml-3">
-                <div className="font-medium text-emerald-800">{manager.name}</div>
-                <div className="text-sm text-emerald-600">{manager.email}</div>
+                <div className="font-medium text-sky-800">
+                  {manager.name}
+                </div>
+                <div className="text-sm text-sky-600">{manager.email}</div>
               </div>
             </div>
           )}
@@ -596,8 +617,8 @@ const ManagerDashboard = () => {
               onClick={() => handleTabChange("attendance")}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
                 activeView === "attendance"
-                  ? "bg-emerald-100 text-emerald-800"
-                  : "text-emerald-600 hover:bg-emerald-50"
+                  ? "bg-sky-100 text-sky-800"
+                  : "text-sky-600 hover:bg-sky-50"
               }`}>
               <CalendarClock size={20} />
               <span>Attendance Management</span>
@@ -607,14 +628,14 @@ const ManagerDashboard = () => {
               onClick={() => handleTabChange("history")}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
                 activeView === "history"
-                  ? "bg-emerald-100 text-emerald-800"
-                  : "text-emerald-600 hover:bg-emerald-50"
+                  ? "bg-sky-100 text-sky-800"
+                  : "text-sky-600 hover:bg-sky-50"
               }`}>
               <History size={20} />
               <span>Attendance History</span>
             </button>
 
-            <div className="mt-6 mb-2 text-sm font-medium text-emerald-600 uppercase">
+            <div className="mt-6 mb-2 text-sm font-medium text-sky-600 uppercase">
               Profile Management
             </div>
 
@@ -622,8 +643,8 @@ const ManagerDashboard = () => {
               onClick={() => handleTabChange("profile")}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
                 activeView === "profile"
-                  ? "bg-emerald-100 text-emerald-800"
-                  : "text-emerald-600 hover:bg-emerald-50"
+                  ? "bg-sky-100 text-sky-800"
+                  : "text-sky-600 hover:bg-sky-50"
               }`}>
               <User size={20} />
               <span>View Profile</span>
@@ -633,8 +654,8 @@ const ManagerDashboard = () => {
               onClick={() => handleTabChange("editProfile")}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
                 activeView === "editProfile"
-                  ? "bg-emerald-100 text-emerald-800"
-                  : "text-emerald-600 hover:bg-emerald-50"
+                  ? "bg-sky-100 text-sky-800"
+                  : "text-sky-600 hover:bg-sky-50"
               }`}>
               <Settings size={20} />
               <span>Edit Profile</span>
@@ -716,48 +737,68 @@ const ManagerDashboard = () => {
 
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="text-lg text-emerald-600">Loading...</div>
+            <div className="text-lg text-sky-600">Loading...</div>
           </div>
         ) : (
           <div className="space-y-6">
             {activeView === "attendance" && (
               <div>
-                <h2 className="text-2xl font-bold text-emerald-800 mb-6">Attendance Management</h2>
+                <h2 className="text-2xl font-bold text-sky-800 mb-6">
+                  Attendance Management
+                </h2>
                 <div className="grid grid-cols-1 gap-6">
                   {/* PIN Code Attendance Section - Only show if it's the primary method */}
                   {shouldShowPinCode() && (
                     <div className="bg-white p-6 rounded-xl shadow-md">
-                      <h3 className="text-lg font-semibold text-emerald-800 mb-4">PIN Code Attendance</h3>
-                      <form onSubmit={handlePinAttendance} className="space-y-4">
+                      <h3 className="text-lg font-semibold text-sky-800 mb-4">
+                        PIN Code Attendance
+                      </h3>
+                      <form
+                        onSubmit={handlePinAttendance}
+                        className="space-y-4">
                         <div>
-                          <label htmlFor="employeeId" className="block text-sm font-medium text-emerald-700 mb-1">
+                          <label
+                            htmlFor="employeeId"
+                            className="block text-sm font-medium text-sky-700 mb-1">
                             Employee ID
                           </label>
                           <input
                             type="text"
                             id="employeeId"
                             value={pinAttendance.employeeId}
-                            onChange={(e) => setPinAttendance(prev => ({ ...prev, employeeId: e.target.value }))}
-                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            onChange={(e) =>
+                              setPinAttendance((prev) => ({
+                                ...prev,
+                                employeeId: e.target.value,
+                              }))
+                            }
+                            className="w-full px-4 py-2 border border-sky-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
                             placeholder="Enter Employee ID"
                           />
                         </div>
                         <div>
-                          <label htmlFor="pinCode" className="block text-sm font-medium text-emerald-700 mb-1">
+                          <label
+                            htmlFor="pinCode"
+                            className="block text-sm font-medium text-sky-700 mb-1">
                             PIN Code
                           </label>
                           <input
                             type="password"
                             id="pinCode"
                             value={pinAttendance.pinCode}
-                            onChange={(e) => setPinAttendance(prev => ({ ...prev, pinCode: e.target.value }))}
-                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            onChange={(e) =>
+                              setPinAttendance((prev) => ({
+                                ...prev,
+                                pinCode: e.target.value,
+                              }))
+                            }
+                            className="w-full px-4 py-2 border border-sky-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
                             placeholder="Enter PIN Code"
                           />
                         </div>
                         <button
                           type="submit"
-                          className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                          className="w-full px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
                           Record Attendance
                         </button>
                       </form>
@@ -775,22 +816,24 @@ const ManagerDashboard = () => {
                   )}
 
                   {/* Show only the highest priority method */}
-                  {getActiveMethod() === 'facialRecognition' && (
+                  {getActiveMethod() === "facialRecognition" && (
                     <div className="bg-white p-6 rounded-xl shadow-md">
-                      <h3 className="text-lg font-semibold text-emerald-800 mb-4">Facial Recognition</h3>
+                      <h3 className="text-lg font-semibold text-sky-800 mb-4">
+                        Facial Recognition
+                      </h3>
                       <div className="space-y-4">
                         <div className="relative">
                           <video
                             ref={videoRef}
-                            className="w-full rounded-lg border border-emerald-200"
+                            className="w-full rounded-lg border border-sky-200"
                             autoPlay
                             playsInline
-                            style={{ transform: 'scaleX(-1)' }}
+                            style={{ transform: "scaleX(-1)" }}
                           />
                           <canvas
                             ref={canvasRef}
                             className="absolute top-0 left-0 w-full h-full"
-                            style={{ transform: 'scaleX(-1)' }}
+                            style={{ transform: "scaleX(-1)" }}
                           />
                         </div>
                         <div className="space-y-2">
@@ -799,22 +842,23 @@ const ManagerDashboard = () => {
                             value={employeeId}
                             onChange={handleEmployeeIdChange}
                             placeholder="Enter Employee ID"
-                            className="w-full px-4 py-2 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            className="w-full px-4 py-2 border border-sky-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
                           />
                           <button
                             onClick={() => setIsCameraActive(!isCameraActive)}
-                            className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                            className="w-full px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
                             {isCameraActive ? "Stop Camera" : "Start Camera"}
                           </button>
                           <button
                             onClick={handleDetectFaces}
                             disabled={!isCameraActive}
-                            className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            className="w-full px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                             Detect Faces
                           </button>
                         </div>
                         {verificationStatus && (
-                          <div className={`p-4 rounded-lg border ${getVerificationStatusClass()}`}>
+                          <div
+                            className={`p-4 rounded-lg border ${getVerificationStatusClass()}`}>
                             {verificationMessage}
                           </div>
                         )}
@@ -822,16 +866,20 @@ const ManagerDashboard = () => {
                     </div>
                   )}
 
-                  {getActiveMethod() === 'qrCode' && (
+                  {getActiveMethod() === "qrCode" && (
                     <div className="bg-white p-6 rounded-xl shadow-md">
-                      <h3 className="text-lg font-semibold text-emerald-800 mb-4">QR Code Scanner</h3>
+                      <h3 className="text-lg font-semibold text-sky-800 mb-4">
+                        QR Code Scanner
+                      </h3>
                       <QrCodeGenerator />
                     </div>
                   )}
 
                   {/* Manual Entry Section - Always visible */}
                   <div className="bg-white p-6 rounded-xl shadow-md">
-                    <h3 className="text-lg font-semibold text-emerald-800 mb-4">Manual Entry</h3>
+                    <h3 className="text-lg font-semibold text-sky-800 mb-4">
+                      Manual Entry
+                    </h3>
                     <PointageManuel />
                   </div>
                 </div>
@@ -839,12 +887,16 @@ const ManagerDashboard = () => {
                 {/* Attendance Records */}
                 <div className="mt-6 bg-white p-6 rounded-xl shadow-md">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-emerald-800">Today's Records</h3>
+                    <h3 className="text-lg font-semibold text-cyan-800">
+                      Today's Records
+                    </h3>
                     <button
                       onClick={handleSendReport}
                       disabled={isSendingReport}
-                      className={`px-4 py-2 bg-emerald-600 text-white rounded-lg transition-colors ${
-                        isSendingReport ? "opacity-50 cursor-not-allowed" : "hover:bg-emerald-700"
+                      className={`px-4 py-2 bg-cyan-600 text-white rounded-lg transition-colors ${
+                        isSendingReport
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:bg-cyan-700"
                       }`}>
                       {isSendingReport ? "Sending..." : "Send Report to Chef"}
                     </button>
@@ -852,26 +904,40 @@ const ManagerDashboard = () => {
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b border-emerald-200">
-                          <th className="text-center p-2 text-emerald-800">Employee ID</th>
-                          <th className="text-center p-2 text-emerald-800">Name</th>
-                          <th className="text-center p-2 text-emerald-800">Time</th>
-                          <th className="text-center p-2 text-emerald-800">Status</th>
+                        <tr className="border-b border-cyan-200">
+                          <th className="text-center p-2 text-cyan-800">
+                            Employee ID
+                          </th>
+                          <th className="text-center p-2 text-cyan-800">
+                            Name
+                          </th>
+                          <th className="text-center p-2 text-cyan-800">
+                            Time
+                          </th>
+                          <th className="text-center p-2 text-cyan-800">
+                            Status
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {attendanceRecords.map((record, index) => (
-                          <tr key={index} className="border-b border-emerald-100 hover:bg-emerald-50">
-                            <td className="p-2 text-emerald-700 text-center">{record.employeeId}</td>
-                            <td className="p-2 text-emerald-700 text-center">{record.employeeName}</td>
-                            <td className="p-2 text-emerald-700 text-center">
+                          <tr
+                            key={index}
+                            className="border-b border-cyan-100 hover:bg-cyan-50">
+                            <td className="p-2 text-cyan-700 text-center">
+                              {record.employeeId}
+                            </td>
+                            <td className="p-2 text-cyan-700 text-center">
+                              {record.employeeName}
+                            </td>
+                            <td className="p-2 text-cyan-700 text-center">
                               {new Date(record.timestamp).toLocaleTimeString()}
                             </td>
                             <td className="p-2 text-center">
                               <span
                                 className={`px-2 py-1 rounded text-sm ${
                                   record.status === "PRESENT"
-                                    ? "bg-emerald-100 text-emerald-800"
+                                    ? "bg-cyan-100 text-cyan-800"
                                     : "bg-red-100 text-red-800"
                                 }`}>
                                 {record.status}
@@ -888,27 +954,40 @@ const ManagerDashboard = () => {
 
             {activeView === "history" && (
               <div>
-                <h2 className="text-2xl font-bold text-emerald-800 mb-6">Attendance History</h2>
+                <h2 className="text-2xl font-bold text-sky-800 mb-6">
+                  Attendance History
+                </h2>
                 <div className="bg-white p-6 rounded-xl shadow-md">
                   {historyLoading ? (
-                    <div className="text-center py-4 text-emerald-600">Loading history...</div>
+                    <div className="text-center py-4 text-sky-600">
+                      Loading history...
+                    </div>
                   ) : historyError ? (
-                    <div className="text-center py-4 text-red-500">{historyError}</div>
+                    <div className="text-center py-4 text-red-500">
+                      {historyError}
+                    </div>
                   ) : attendanceHistory.length > 0 ? (
                     <div className="space-y-4">
                       {Object.entries(
                         attendanceHistory.reduce((acc, record) => {
-                          const date = new Date(record.timestamp).toLocaleDateString();
+                          const date = new Date(
+                            record.timestamp,
+                          ).toLocaleDateString();
                           if (!acc[date]) acc[date] = [];
                           acc[date].push(record);
                           return acc;
                         }, {}),
                       )
-                        .sort(([dateA], [dateB]) => new Date(dateB) - new Date(dateA))
+                        .sort(
+                          ([dateA], [dateB]) =>
+                            new Date(dateB) - new Date(dateA),
+                        )
                         .map(([date, records]) => (
-                          <div key={date} className="border border-emerald-200 rounded-lg overflow-hidden">
+                          <div
+                            key={date}
+                            className="border border-sky-200 rounded-lg overflow-hidden">
                             <div
-                              className="flex items-center justify-between p-4 bg-emerald-50 hover:bg-emerald-100 cursor-pointer"
+                              className="flex items-center justify-between p-4 bg-sky-50 hover:bg-sky-100 cursor-pointer"
                               onClick={() =>
                                 setExpandedDates((prev) => ({
                                   ...prev,
@@ -916,11 +995,16 @@ const ManagerDashboard = () => {
                                 }))
                               }>
                               <div className="flex items-center gap-3">
-                                <span className="text-emerald-600 text-xl">📅</span>
+                                <span className="text-sky-600 text-xl">
+                                  📅
+                                </span>
                                 <div>
-                                  <h3 className="font-semibold text-emerald-800">{date}</h3>
-                                  <p className="text-sm text-emerald-600">
-                                    {records.length} record{records.length > 1 ? "s" : ""}
+                                  <h3 className="font-semibold text-sky-800">
+                                    {date}
+                                  </h3>
+                                  <p className="text-sm text-sky-600">
+                                    {records.length} record
+                                    {records.length > 1 ? "s" : ""}
                                   </p>
                                 </div>
                               </div>
@@ -933,32 +1017,46 @@ const ManagerDashboard = () => {
                             </div>
 
                             {expandedDates[date] && (
-                              <div className="border-t border-emerald-200">
+                              <div className="border-t border-sky-200">
                                 <div className="overflow-x-auto">
                                   <table className="w-full">
                                     <thead>
-                                      <tr className="bg-emerald-50">
-                                        <th className="text-center p-2 text-emerald-800">Employee ID</th>
-                                        <th className="text-center p-2 text-emerald-800">Name</th>
-                                        <th className="text-center p-2 text-emerald-800">Time</th>
-                                        <th className="text-center p-2 text-emerald-800">Status</th>
+                                      <tr className="bg-sky-50">
+                                        <th className="text-center p-2 text-sky-800">
+                                          Employee ID
+                                        </th>
+                                        <th className="text-center p-2 text-sky-800">
+                                          Name
+                                        </th>
+                                        <th className="text-center p-2 text-sky-800">
+                                          Time
+                                        </th>
+                                        <th className="text-center p-2 text-sky-800">
+                                          Status
+                                        </th>
                                       </tr>
                                     </thead>
                                     <tbody>
                                       {records.map((record, index) => (
                                         <tr
                                           key={index}
-                                          className="border-b border-emerald-100 hover:bg-emerald-50">
-                                          <td className="p-2 text-emerald-700 text-center">{record.employeeId}</td>
-                                          <td className="p-2 text-emerald-700 text-center">{record.employeeName}</td>
-                                          <td className="p-2 text-emerald-700 text-center">
-                                            {new Date(record.timestamp).toLocaleTimeString()}
+                                          className="border-b border-sky-100 hover:bg-sky-50">
+                                          <td className="p-2 text-sky-700 text-center">
+                                            {record.employeeId}
+                                          </td>
+                                          <td className="p-2 text-sky-700 text-center">
+                                            {record.employeeName}
+                                          </td>
+                                          <td className="p-2 text-sky-700 text-center">
+                                            {new Date(
+                                              record.timestamp,
+                                            ).toLocaleTimeString()}
                                           </td>
                                           <td className="p-2 text-center">
                                             <span
                                               className={`px-2 py-1 rounded text-sm ${
                                                 record.status === "PRESENT"
-                                                  ? "bg-emerald-100 text-emerald-800"
+                                                  ? "bg-sky-100 text-sky-800"
                                                   : "bg-red-100 text-red-800"
                                               }`}>
                                               {record.status}
@@ -975,13 +1073,17 @@ const ManagerDashboard = () => {
                         ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-emerald-600">No attendance history found</div>
+                    <div className="text-center py-8 text-sky-600">
+                      No attendance history found
+                    </div>
                   )}
                 </div>
               </div>
             )}
 
-            {activeView === "profile" && manager && <ProfileView employee={manager} />}
+            {activeView === "profile" && manager && (
+              <ProfileView employee={manager} />
+            )}
             {activeView === "editProfile" && manager && (
               <EditProfileView employee={manager} setEmployee={setManager} />
             )}

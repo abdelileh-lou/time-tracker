@@ -35,22 +35,22 @@ const EmployeeDashboard = () => {
 
   console.log("Employee data:", employee);
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-sky-50">
       {/* Sidebar */}
-      <div className="w-64 bg-gray-800 text-white">
-        <div className="p-4 text-xl font-bold border-b border-gray-700">
+      <div className="w-64 bg-sky-900 text-white">
+        <div className="p-4 text-xl font-bold border-b border-sky-800">
           {employee?.name || "Employee"} Dashboard
         </div>
 
         <div className="p-4">
           {employee && (
             <div className="flex items-center mb-6">
-              <div className="bg-gray-600 rounded-full p-2">
+              <div className="bg-sky-700 rounded-full p-2">
                 <User size={24} />
               </div>
               <div className="ml-3">
                 <div className="font-medium">{employee.name}</div>
-                <div className="text-sm text-gray-400">{employee.email}</div>
+                <div className="text-sm text-sky-300">{employee.email}</div>
               </div>
             </div>
           )}
@@ -59,7 +59,7 @@ const EmployeeDashboard = () => {
             <button
               onClick={() => setActiveTab("planning")}
               className={`flex items-center w-full p-3 mb-2 rounded ${
-                activeTab === "planning" ? "bg-gray-700" : "hover:bg-gray-700"
+                activeTab === "planning" ? "bg-sky-800" : "hover:bg-sky-800"
               }`}>
               <Calendar size={20} />
               <span className="ml-3">Mon Planning</span>
@@ -68,20 +68,20 @@ const EmployeeDashboard = () => {
             <button
               onClick={() => setActiveTab("pointage")}
               className={`flex items-center w-full p-3 mb-2 rounded ${
-                activeTab === "pointage" ? "bg-gray-700" : "hover:bg-gray-700"
+                activeTab === "pointage" ? "bg-sky-800" : "hover:bg-sky-800"
               }`}>
               <Clock size={20} />
               <span className="ml-3">Mes Pointages</span>
             </button>
 
-            <div className="mt-6 mb-2 text-sm font-medium text-gray-400 uppercase">
+            <div className="mt-6 mb-2 text-sm font-medium text-sky-300 uppercase">
               Gérer Profile
             </div>
 
             <button
               onClick={() => setActiveTab("profile")}
               className={`flex items-center w-full p-3 mb-2 rounded ${
-                activeTab === "profile" ? "bg-gray-700" : "hover:bg-gray-700"
+                activeTab === "profile" ? "bg-sky-800" : "hover:bg-sky-800"
               }`}>
               <User size={20} />
               <span className="ml-3">Consulter Profile</span>
@@ -91,8 +91,8 @@ const EmployeeDashboard = () => {
               onClick={() => setActiveTab("editProfile")}
               className={`flex items-center w-full p-3 mb-2 rounded ${
                 activeTab === "editProfile"
-                  ? "bg-gray-700"
-                  : "hover:bg-gray-700"
+                  ? "bg-sky-800"
+                  : "hover:bg-sky-800"
               }`}>
               <Edit size={20} />
               <span className="ml-3">Modifier Profile</span>
@@ -102,7 +102,7 @@ const EmployeeDashboard = () => {
           <div className="absolute bottom-4 left-4 right-4">
             <button
               onClick={handleLogout}
-              className="flex items-center  p-3 text-red-400 hover:bg-gray-700 rounded">
+              className="flex items-center p-3 text-red-400 hover:bg-sky-800 rounded">
               <LogOut size={20} />
               <span className="ml-3">Déconnexion</span>
             </button>
@@ -111,10 +111,10 @@ const EmployeeDashboard = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto bg-sky-50">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="text-lg">Chargement...</div>
+            <div className="text-lg text-sky-700">Chargement...</div>
           </div>
         ) : error ? (
           <div className="flex items-center justify-center h-full">
