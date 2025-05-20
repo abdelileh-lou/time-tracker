@@ -118,11 +118,45 @@ const EmployeeDashboard = () => {
           </div>
         ) : error ? (
           <div className="flex items-center justify-center h-full">
-            <div className="text-lg text-red-500">{error}</div>
+            <div className="bg-rose-50 border border-rose-200 rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="flex items-center justify-center mb-4">
+                <div className="bg-rose-100 rounded-full p-3">
+                  <Calendar size={24} className="text-rose-600" />
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold text-rose-800 text-center mb-2">
+                Aucun Planning Disponible
+              </h3>
+              <p className="text-rose-600 text-center">
+                {error === "no_planning" 
+                  ? "Vous n'avez pas encore de planning assigné. Veuillez contacter votre chef de service."
+                  : error}
+              </p>
+            </div>
           </div>
         ) : (
           <div className="p-6">
-            {activeTab === "planning" && <PlanningView employee={employee} />}
+            {activeTab === "planning" && (
+              employee?.planning ? (
+                <PlanningView employee={employee} />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="bg-rose-50 border border-rose-200 rounded-lg p-6 max-w-md w-full">
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="bg-rose-100 rounded-full p-3">
+                        <Calendar size={24} className="text-rose-600" />
+                      </div>
+                    </div>
+                    <h3 className="text-lg font-semibold text-rose-800 text-center mb-2">
+                      Aucun Planning Disponible
+                    </h3>
+                    <p className="text-rose-600 text-center">
+                      Vous n'avez pas encore de planning assigné. Veuillez contacter votre chef de service.
+                    </p>
+                  </div>
+                </div>
+              )
+            )}
             {activeTab === "pointage" && <PointageView employee={employee} />}
             {activeTab === "profile" && <ProfileView employee={employee} />}
             {activeTab === "editProfile" && (
