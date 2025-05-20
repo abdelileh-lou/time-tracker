@@ -45,7 +45,10 @@ const EditProfileView = ({ employee, setEmployee }) => {
       setPhoto(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPhotoPreview(reader.result);
+        const newPreview = reader.result;
+        setPhotoPreview(newPreview);
+        // Store the preview in a more persistent way
+        localStorage.setItem('profilePhotoPreview', newPreview);
       };
       reader.readAsDataURL(file);
     }
@@ -57,7 +60,9 @@ const EditProfileView = ({ employee, setEmployee }) => {
     setError(null);
     setSuccess(false);
 
-    if (formData.password && formData.password !== formData.confirmPassword) {
+    // Only validate password if either password field is filled
+    if ((formData.password || formData.confirmPassword) && 
+        formData.password !== formData.confirmPassword) {
       setError("Les mots de passe ne correspondent pas");
       setLoading(false);
       return;
@@ -65,15 +70,26 @@ const EditProfileView = ({ employee, setEmployee }) => {
 
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append("name", formData.name);
-      formDataToSend.append("email", formData.email);
-
+      
+      // Only append fields that have been changed and are not empty
+      if (formData.name && formData.name !== employee.name) {
+        formDataToSend.append("name", formData.name);
+      }
+      if (formData.email && formData.email !== employee.email) {
+        formDataToSend.append("email", formData.email);
+      }
       if (formData.password) {
         formDataToSend.append("password", formData.password);
       }
-
       if (photo) {
         formDataToSend.append("imageFile", photo);
+      }
+
+      // Only proceed if there are changes to send
+      if (formDataToSend.entries().next().done) {
+        setError("Aucune modification à enregistrer");
+        setLoading(false);
+        return;
       }
 
       const response = await fetch(
@@ -89,20 +105,57 @@ const EditProfileView = ({ employee, setEmployee }) => {
       }
 
       const updatedEmployee = await response.json();
-      setEmployee(updatedEmployee);
+      
+      // Update the employee state while preserving the photo URL
+      const updatedEmployeeWithPhoto = {
+        ...updatedEmployee,
+        photoUrl: updatedEmployee.photoUrl || employee.photoUrl || photoPreview
+      };
+      
+      setEmployee(prevEmployee => ({
+        ...prevEmployee,
+        ...updatedEmployeeWithPhoto
+      }));
+
+      // Update photo preview with the new URL or keep the current preview
+      if (updatedEmployee.photoUrl) {
+        setPhotoPreview(updatedEmployee.photoUrl);
+      } else if (photoPreview) {
+        // Keep the current preview if no new URL is provided
+        setPhotoPreview(photoPreview);
+      }
+
       setSuccess(true);
 
-      setFormData((prev) => ({
-        ...prev,
-        password: "",
-        confirmPassword: "",
-      }));
+      // Only clear password fields if they were updated
+      if (formData.password) {
+        setFormData(prev => ({
+          ...prev,
+          password: "",
+          confirmPassword: "",
+        }));
+      }
+
+      // Clear the photo state after successful upload
+      setPhoto(null);
     } catch (err) {
       setError(err.message);
+      // If there's an error, keep the current photo preview
+      if (photoPreview) {
+        setPhotoPreview(photoPreview);
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  // Add useEffect to restore photo preview on component mount
+  useEffect(() => {
+    const savedPreview = localStorage.getItem('profilePhotoPreview');
+    if (savedPreview && !photoPreview) {
+      setPhotoPreview(savedPreview);
+    }
+  }, []);
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -115,7 +168,7 @@ const EditProfileView = ({ employee, setEmployee }) => {
       )}
 
       {error && (
-        <div className="mb-4 p-4 bg-sky-100 text-sky-700 rounded">
+        <div className="mb-4 p-4 bg-rose-100 text-rose-700 rounded">
           Erreur: {error}
         </div>
       )}
@@ -124,7 +177,7 @@ const EditProfileView = ({ employee, setEmployee }) => {
         <div className="mb-6 text-center">
           <div className="relative inline-block">
             <img
-              src={photoPreview || "https://via.placeholder.com/150"}
+              src={photoPreview || employee?.photoUrl || "https://via.placeholder.com/150"}
               alt="Profile"
               className="w-32 h-32 rounded-full object-cover border-2 border-slate-200"
             />
@@ -148,6 +201,9 @@ const EditProfileView = ({ employee, setEmployee }) => {
               </svg>
             </label>
           </div>
+          <p className="mt-2 text-sm text-slate-600">
+            Cliquez sur l'icône pour changer votre photo
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -155,7 +211,7 @@ const EditProfileView = ({ employee, setEmployee }) => {
             <label
               htmlFor="name"
               className="block mb-2 text-sm font-medium text-slate-700">
-              Nom Complet
+              Nom Complet (optionnel)
             </label>
             <input
               type="text"
@@ -164,7 +220,7 @@ const EditProfileView = ({ employee, setEmployee }) => {
               value={formData.name}
               onChange={handleChange}
               className="w-full p-3 border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500"
-              required
+              placeholder={employee?.name || "Votre nom"}
             />
           </div>
 
@@ -172,7 +228,7 @@ const EditProfileView = ({ employee, setEmployee }) => {
             <label
               htmlFor="email"
               className="block mb-2 text-sm font-medium text-slate-700">
-              Email
+              Email (optionnel)
             </label>
             <input
               type="email"
@@ -181,7 +237,7 @@ const EditProfileView = ({ employee, setEmployee }) => {
               value={formData.email}
               onChange={handleChange}
               className="w-full p-3 border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500"
-              required
+              placeholder={employee?.email || "Votre email"}
             />
           </div>
 
@@ -189,7 +245,7 @@ const EditProfileView = ({ employee, setEmployee }) => {
             <label
               htmlFor="password"
               className="block mb-2 text-sm font-medium text-slate-700">
-              Nouveau Mot de Passe
+              Nouveau Mot de Passe (optionnel)
             </label>
             <input
               type="password"
@@ -198,6 +254,7 @@ const EditProfileView = ({ employee, setEmployee }) => {
               value={formData.password}
               onChange={handleChange}
               className="w-full p-3 border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500"
+              placeholder="••••••••"
             />
           </div>
 
@@ -205,7 +262,7 @@ const EditProfileView = ({ employee, setEmployee }) => {
             <label
               htmlFor="confirmPassword"
               className="block mb-2 text-sm font-medium text-slate-700">
-              Confirmer le Mot de Passe
+              Confirmer le Mot de Passe (optionnel)
             </label>
             <input
               type="password"
@@ -214,6 +271,7 @@ const EditProfileView = ({ employee, setEmployee }) => {
               value={formData.confirmPassword}
               onChange={handleChange}
               className="w-full p-3 border border-slate-300 rounded focus:ring-sky-500 focus:border-sky-500"
+              placeholder="••••••••"
             />
           </div>
         </div>
