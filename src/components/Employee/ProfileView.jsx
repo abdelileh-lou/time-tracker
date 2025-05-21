@@ -55,7 +55,10 @@ const ProfileView = ({ employee }) => {
             setServiceInfo(null);
           }
         } catch (serviceError) {
-          console.error("Service API error:", serviceError.response || serviceError);
+          console.error(
+            "Service API error:",
+            serviceError.response || serviceError,
+          );
           if (serviceError.response) {
             console.error("Error status:", serviceError.response.status);
             console.error("Error data:", serviceError.response.data);
@@ -122,7 +125,9 @@ const ProfileView = ({ employee }) => {
                   <Mail className="text-cyan-600" size={20} />
                   <div>
                     <p className="text-sm text-cyan-600">Email</p>
-                    <p className="font-medium text-cyan-800">{serviceInfo.email}</p>
+                    <p className="font-medium text-cyan-800">
+                      {serviceInfo.email}
+                    </p>
                   </div>
                 </div>
               )}
@@ -146,7 +151,7 @@ const ProfileView = ({ employee }) => {
           </div>
 
           {/* Service Information */}
-          {serviceInfo ? (
+          {/* {serviceInfo ? (
             <div>
               <h3 className="text-lg font-semibold text-cyan-800 mb-4">
                 Service Information
@@ -167,7 +172,7 @@ const ProfileView = ({ employee }) => {
             <div className="text-cyan-600 text-center p-4">
               Service information not available
             </div>
-          )}
+          )} */}
 
           {/* PIN Code Section - Only show if PIN code is available */}
           {pinCode && (

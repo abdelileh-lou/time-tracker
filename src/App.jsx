@@ -4,7 +4,7 @@ import Login from "./components/Login";
 import Landing from "./pages/landing";
 import Footer from "./components/Footer";
 import Admin from "./components/Admin/Admin";
-import EmployeeDashboard from "./components/Employee/EmployeeDashboard ";
+import EmployeeDashboard from "./components/Employee/EmployeeDashboard";
 import ScanPointage from "./pages/ScanPointage";
 import ManagerDashboard from "./components/Manager/ManagerDashboard";
 import ChefServiceDashboard from "./components/ChefService/ChefServiceDashboard";

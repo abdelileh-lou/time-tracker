@@ -36,12 +36,6 @@ const ChefProfileView = ({ chef }) => {
                 <p className="text-sm text-sky-600">Email</p>
                 <p className="font-medium text-sky-800">{chef.email}</p>
               </div>
-              <div>
-                <p className="text-sm text-sky-600">Service</p>
-                <p className="font-medium text-sky-800">
-                  {chef.service?.name || "Not specified"}
-                </p>
-              </div>
             </div>
           </div>
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Calendar } from "lucide-react";
 
 export default function PlanningView({ employee }) {
   const [planningData, setPlanningData] = useState(null);
@@ -15,6 +16,13 @@ export default function PlanningView({ employee }) {
           `http://localhost:8092/api/planning/employee/${employee.id}`,
         );
 
+        if (response.status === 404) {
+          // No planning exists for this employee - treat as no data case
+          setPlanningData(null);
+          setLoading(false);
+          return;
+        }
+
         if (!response.ok) {
           throw new Error(`API request failed with status ${response.status}`);
         }
@@ -23,7 +31,12 @@ export default function PlanningView({ employee }) {
         setPlanningData(data);
         setLoading(false);
       } catch (err) {
-        setError(`Failed to fetch planning data: ${err.message}`);
+        // Only show error for non-404 cases
+        if (err.message.includes('404')) {
+          setPlanningData(null);
+        } else {
+          setError(`Failed to fetch planning data: ${err.message}`);
+        }
         setLoading(false);
       }
     };
@@ -90,7 +103,23 @@ export default function PlanningView({ employee }) {
     return <div className="p-4">Loading employee planning data...</div>;
   if (error) return <div className="p-4 text-red-500">{error}</div>;
   if (!planningData)
-    return <div className="p-4">No planning data available</div>;
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="bg-rose-50 border border-rose-200 rounded-lg p-6 max-w-md w-full">
+          <div className="flex items-center justify-center mb-4">
+            <div className="bg-rose-100 rounded-full p-3">
+              <Calendar size={24} className="text-rose-600" />
+            </div>
+          </div>
+          <h3 className="text-lg font-semibold text-rose-800 text-center mb-2">
+            Aucun Planning Disponible
+          </h3>
+          <p className="text-rose-600 text-center">
+            Vous n'avez pas encore de planning assigné. Veuillez contacter votre chef de service.
+          </p>
+        </div>
+      </div>
+    );
 
   const planData = JSON.parse(planningData.planJson);
   const weekDates = getCurrentWeekDates();
