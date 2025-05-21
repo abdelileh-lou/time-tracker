@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { logout, getUserData } from "../../Auth/auth";
+import { useSnackbar } from 'notistack';
 import ChefProfileView from "./ChefProfileView";
 import ChefEditProfile from "./ChefEditProfile"; // Import the edit profile component
 import { Monitor, CalendarClock, Users, Settings, LogOut, ClipboardList, History, User } from "lucide-react";
 
 const ChefServiceDashboard = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("planning");
   const [activePlanningTab, setActivePlanningTab] = useState("create");
@@ -84,7 +86,13 @@ const ChefServiceDashboard = () => {
       console.log("Planning history data:", response.data);
     } catch (error) {
       console.error("Error fetching planning history:", error);
-      alert("Failed to load planning history.");
+      enqueueSnackbar("Failed to load planning history.", {
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     }
   };
 
@@ -95,7 +103,13 @@ const ChefServiceDashboard = () => {
       console.log("Available plannings:", response.data);
     } catch (error) {
       console.error("Error fetching available plannings:", error);
-      alert("Failed to load available plannings.");
+      enqueueSnackbar("Failed to load available plannings.", {
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     }
   };
 
@@ -126,7 +140,13 @@ const ChefServiceDashboard = () => {
   const savePlanning = async () => {
     try {
       if (!planningName.trim()) {
-        alert("Please enter a planning name");
+        enqueueSnackbar("Please enter a planning name", {
+          variant: 'warning',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
         return;
       }
 
@@ -144,7 +164,13 @@ const ChefServiceDashboard = () => {
         planning: JSON.stringify(planningData),
       });
       setSavedPlanning(planningData);
-      alert("Planning saved successfully!");
+      enqueueSnackbar("Planning saved successfully!", {
+        variant: 'success',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
 
       // Refresh planning history after saving
       fetchPlanningHistory();
@@ -152,7 +178,13 @@ const ChefServiceDashboard = () => {
       resetPlanningForm();
     } catch (error) {
       console.error("Error saving planning:", error);
-      alert("Failed to save planning.");
+      enqueueSnackbar("Failed to save planning.", {
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     }
   };
 
@@ -165,7 +197,13 @@ const ChefServiceDashboard = () => {
   const deletePlanning = async () => {
     try {
       if (!selectedPlanning) {
-        alert("Please select a planning to delete");
+        enqueueSnackbar("Please select a planning to delete", {
+          variant: 'warning',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
         return;
       }
 
@@ -175,7 +213,13 @@ const ChefServiceDashboard = () => {
       );
 
       if (!planningToDelete) {
-        alert("Selected planning not found");
+        enqueueSnackbar("Selected planning not found", {
+          variant: 'error',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
         return;
       }
 
@@ -186,21 +230,38 @@ const ChefServiceDashboard = () => {
 
       await axios.delete(`http://127.0.0.1:8092/api/planning/${planningName}`);
       setSelectedPlanning("");
-      alert("Planning deleted successfully!");
+      enqueueSnackbar("Planning deleted successfully!", {
+        variant: 'success',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
 
       // Refresh available plannings and history after deletion
       fetchAvailablePlannings();
       fetchPlanningHistory();
     } catch (error) {
       console.error("Error deleting planning:", error);
-      alert("Failed to delete planning.");
+      enqueueSnackbar("Failed to delete planning.", {
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     }
   };
   const assignToEmployees = async () => {
     try {
-      // Corrected validation: use selectedPlanning instead of savedPlanning
       if (!selectedPlanning || selectedEmployees.length === 0) {
-        alert("Please select a planning and employees");
+        enqueueSnackbar("Please select a planning and employees", {
+          variant: 'warning',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
         return;
       }
 
@@ -210,7 +271,13 @@ const ChefServiceDashboard = () => {
       );
 
       if (!selectedPlan) {
-        alert("Selected planning not found");
+        enqueueSnackbar("Selected planning not found", {
+          variant: 'error',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
         return;
       }
 
@@ -221,19 +288,27 @@ const ChefServiceDashboard = () => {
       const numericEmployeeIds = selectedEmployees.map((id) => Number(id));
 
       await axios.post("http://127.0.0.1:8092/api/planning/assign-planning", {
-        planningName: planningData.name, // Use name from parsed planning data
-        employeeIds: numericEmployeeIds, // Send numeric IDs if backend requires
+        planningName: planningData.name,
+        employeeIds: numericEmployeeIds,
       });
 
-      alert("Planning assigned to selected employees successfully!");
+      enqueueSnackbar("Planning assigned to selected employees successfully!", {
+        variant: 'success',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
       fetchPlanningHistory();
     } catch (error) {
       console.error("Error assigning planning:", error);
-      alert(
-        `Failed to assign planning: ${
-          error.response?.data?.message || error.message
-        }`,
-      );
+      enqueueSnackbar(`Failed to assign planning: ${error.response?.data?.message || error.message}`, {
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     }
   };
 
@@ -246,7 +321,13 @@ const ChefServiceDashboard = () => {
       console.log("Attendance sheets:", response.data);
     } catch (error) {
       console.error("Error fetching attendance sheets:", error);
-      alert("Failed to load attendance sheets.");
+      enqueueSnackbar("Failed to load attendance sheets.", {
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     }
   };
 
@@ -480,31 +561,33 @@ const ChefServiceDashboard = () => {
                   {/* Employee Selection Grid */}
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-y-auto border border-slate-200 p-2 rounded-lg">
                     {employees.length > 0 ? (
-                      employees.map((employee) => (
-                        <label
-                          key={employee.id}
-                          className="flex items-center p-2 hover:bg-sky-50 rounded-lg">
-                          <input
-                            type="checkbox"
-                            checked={selectedEmployees.includes(employee.id)}
-                            onChange={(e) => {
-                              const checked = e.target.checked;
-                              setSelectedEmployees((prev) =>
-                                checked
-                                  ? [...prev, employee.id]
-                                  : prev.filter((id) => id !== employee.id),
-                              );
-                            }}
-                            className="mr-2 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                          />
-                          <div>
-                            <div className="text-sky-800">{employee.name}</div>
-                            <div className="text-xs text-sky-600">
-                              {employee.role || "No role"}
+                      employees
+                        .filter(employee => employee.role !== "chef")
+                        .map((employee) => (
+                          <label
+                            key={employee.id}
+                            className="flex items-center p-2 hover:bg-sky-50 rounded-lg">
+                            <input
+                              type="checkbox"
+                              checked={selectedEmployees.includes(employee.id)}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                setSelectedEmployees((prev) =>
+                                  checked
+                                    ? [...prev, employee.id]
+                                    : prev.filter((id) => id !== employee.id),
+                                );
+                              }}
+                              className="mr-2 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                            />
+                            <div>
+                              <div className="text-sky-800">{employee.name}</div>
+                              <div className="text-xs text-sky-600">
+                                {employee.role || "No role"}
+                              </div>
                             </div>
-                          </div>
-                        </label>
-                      ))
+                          </label>
+                        ))
                     ) : (
                       <p className="col-span-3 text-sky-600 italic">
                         No employees found in your service

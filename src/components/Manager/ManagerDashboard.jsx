@@ -25,6 +25,15 @@ import { getUserData, logout } from "../../Auth/auth";
 
 const ManagerDashboard = () => {
   const { enqueueSnackbar } = useSnackbar();
+  
+  // Define getActiveMethod at the top of the component
+  const getActiveMethod = () => {
+    const methods = Object.entries(attendanceMethods)
+      .filter(([_, config]) => config.active)
+      .sort((a, b) => a[1].priority - b[1].priority);
+    return methods.length > 0 ? methods[0][0] : null;
+  };
+
   // Add missing refs
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -41,7 +50,7 @@ const ManagerDashboard = () => {
   const [isSendingReport, setIsSendingReport] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState("");
-  const [confirmationType, setConfirmationType] = useState(""); // 'success' or 'error'
+  const [confirmationType, setConfirmationType] = useState("");
   const [manager, setManager] = useState(null);
   const [primaryMethod, setPrimaryMethod] = useState("facial");
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -63,6 +72,9 @@ const ManagerDashboard = () => {
   });
   const [pinError, setPinError] = useState("");
   const [pinSuccess, setPinSuccess] = useState("");
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [detections, setDetections] = useState([]);
+  const [showManualEntry, setShowManualEntry] = useState(false);
 
   // Initialize facial recognition models
   useEffect(() => {
@@ -78,10 +90,14 @@ const ManagerDashboard = () => {
     initializeFacialRecognition();
   }, []);
 
-  // Handle camera stream
+  // Update the useEffect for camera setup to use attendanceMethods instead of getActiveMethod
   useEffect(() => {
     const setupCamera = async () => {
-      if (isCameraActive && videoRef.current) {
+      const activeMethod = Object.entries(attendanceMethods)
+        .filter(([_, config]) => config.active)
+        .sort((a, b) => a[1].priority - b[1].priority)[0]?.[0];
+
+      if (videoRef.current && activeMethod === "facialRecognition") {
         try {
           const stream = await navigator.mediaDevices.getUserMedia({
             video: {
@@ -92,20 +108,28 @@ const ManagerDashboard = () => {
           });
           videoRef.current.srcObject = stream;
           streamRef.current = stream;
+          setIsCameraActive(true);
         } catch (error) {
           console.error("Error accessing camera:", error);
           setIsCameraActive(false);
-        }
-      } else if (!isCameraActive && streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-        if (videoRef.current) {
-          videoRef.current.srcObject = null;
+          enqueueSnackbar("Error accessing camera", {
+            variant: "error",
+            anchorOrigin: {
+              vertical: "top",
+              horizontal: "right",
+            },
+          });
         }
       }
     };
 
     setupCamera();
-  }, [isCameraActive]);
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [attendanceMethods]); // Use attendanceMethods instead of getActiveMethod
 
   useEffect(() => {
     const fetchAttendanceHistory = async () => {
@@ -225,8 +249,8 @@ const ManagerDashboard = () => {
   }, [activeView, manager]);
 
   useEffect(() => {
-    const shouldActivateCamera =
-      activeView === "attendance" && primaryMethod === "facial";
+    const shouldActivateCamera = activeView === "attendance" && 
+      (primaryMethod === "facial" || getActiveMethod() === "facialRecognition");
     setIsCameraActive(shouldActivateCamera);
   }, [activeView, primaryMethod]);
 
@@ -244,38 +268,105 @@ const ManagerDashboard = () => {
     fetchAttendanceMethods();
   }, []);
 
+  const reloadAttendanceRecords = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:8092/api/attendance/record/today"
+      );
+      setAttendanceRecords(response.data);
+    } catch (error) {
+      console.error("Error reloading attendance records:", error);
+      enqueueSnackbar("Error refreshing attendance records", {
+        variant: "error",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+    }
+  };
+
+  // Update the camera setup function
+  const startVideo = async () => {
+    try {
+      await loadModels();
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play();
+          setIsCameraActive(true);
+        };
+      }
+    } catch (err) {
+      console.error("Error accessing webcam:", err);
+      enqueueSnackbar("Error accessing camera. Please check permissions.", {
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
+    }
+  };
+
+  const stopVideo = () => {
+    if (videoRef.current?.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+      setIsCameraActive(false);
+    }
+  };
+
+  // Update the detect faces function
   const handleDetectFaces = async () => {
-    if (!videoRef.current || !canvasRef.current) {
-      setVerificationStatus("error");
-      setVerificationMessage("Camera not initialized");
+    if (!isCameraActive) {
+      enqueueSnackbar("Please activate the camera first", {
+        variant: 'warning',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
       return;
     }
 
+    setIsDetecting(true);
     try {
-      setVerificationStatus("pending");
-      setVerificationMessage("Detecting face...");
+      const faces = await detectFaces(videoRef.current);
+      setDetections(faces);
 
-      const detections = await detectFaces(videoRef.current, canvasRef.current);
-      console.log("Face detections:", detections);
-
-      if (detections && detections.length > 0) {
-        setVerificationStatus("success");
-        setVerificationMessage("Face detected successfully!");
-
-        // If we have an employee ID, proceed with verification
+      if (faces.length > 0) {
         if (employeeId) {
-          await handleFacialDataCapture(detections[0].descriptor);
+          await handleFacialDataCapture(faces[0].descriptor);
+          await reloadAttendanceRecords();
         }
+        enqueueSnackbar("Face detected successfully!", {
+          variant: 'success',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
       } else {
-        setVerificationStatus("error");
-        setVerificationMessage(
-          "No face detected. Please ensure your face is clearly visible in the camera.",
-        );
+        enqueueSnackbar("No face detected. Please try again.", {
+          variant: 'warning',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
       }
     } catch (error) {
-      console.error("Error detecting faces:", error);
-      setVerificationStatus("error");
-      setVerificationMessage("Error detecting faces. Please try again.");
+      console.error("Detection error:", error);
+      enqueueSnackbar("Error detecting face. Please try again.", {
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
+    } finally {
+      setIsDetecting(false);
     }
   };
 
@@ -326,10 +417,7 @@ const ManagerDashboard = () => {
           );
 
           if (response.data) {
-            setAttendanceRecords((prevRecords) => [
-              ...prevRecords,
-              response.data,
-            ]);
+            await reloadAttendanceRecords();
             enqueueSnackbar("Attendance recorded successfully!", {
               variant: "success",
               anchorOrigin: {
@@ -454,15 +542,6 @@ const ManagerDashboard = () => {
     }
   };
 
-  const getActiveMethod = () => {
-    const methods = Object.entries(attendanceMethods)
-      .filter(([_, config]) => config.active)
-      .sort((a, b) => a[1].priority - b[1].priority);
-
-    // Return the method with highest priority
-    return methods.length > 0 ? methods[0][0] : null;
-  };
-
   const handlePinAttendance = async (e) => {
     e.preventDefault();
     setPinError("");
@@ -523,10 +602,7 @@ const ManagerDashboard = () => {
           );
 
           if (attendanceResponse.data) {
-            setAttendanceRecords((prevRecords) => [
-              ...prevRecords,
-              attendanceResponse.data,
-            ]);
+            await reloadAttendanceRecords();
             setPinAttendance({ employeeId: "", pinCode: "" });
             enqueueSnackbar("Attendance recorded successfully!", {
               variant: "success",
@@ -584,10 +660,43 @@ const ManagerDashboard = () => {
     );
   };
 
+  const handleQrCodeScan = async (employeeId) => {
+    try {
+      const response = await axios.post(
+        "http://localhost:8092/api/attendance/record",
+        {
+          employeeId: parseInt(employeeId),
+          timestamp: new Date().toISOString(),
+          status: "PRESENT",
+        },
+      );
+
+      if (response.data) {
+        await reloadAttendanceRecords();
+        enqueueSnackbar("Attendance recorded successfully!", {
+          variant: "success",
+          anchorOrigin: {
+            vertical: "top",
+            horizontal: "right",
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Error recording QR code attendance:", error);
+      enqueueSnackbar("Failed to record attendance", {
+        variant: "error",
+        anchorOrigin: {
+          vertical: "top",
+          horizontal: "right",
+        },
+      });
+    }
+  };
+
   return (
     <div className="flex h-screen bg-sky-50">
-      {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg">
+      {/* Sidebar - Only change width from w-64 to w-80 */}
+      <div className="w-80 bg-white shadow-lg">
         <div className="p-6 border-b border-sky-100">
           <div className="flex items-center gap-2 mb-4">
             <Monitor size="2rem" className="text-sky-600" />
@@ -604,9 +713,7 @@ const ManagerDashboard = () => {
                 <User size={24} className="text-sky-600" />
               </div>
               <div className="ml-3">
-                <div className="font-medium text-sky-800">
-                  {manager.name}
-                </div>
+                <div className="font-medium text-sky-800">{manager.name}</div>
                 <div className="text-sm text-sky-600">{manager.email}</div>
               </div>
             </div>
@@ -614,24 +721,41 @@ const ManagerDashboard = () => {
 
           <nav>
             <button
-              onClick={() => handleTabChange("attendance")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
-                activeView === "attendance"
+              onClick={() => {
+                setActiveView("attendance");
+                setShowManualEntry(false);
+              }}
+              className={`w-full flex items-center px-4 py-3 rounded-lg transition-all duration-300 ${
+                activeView === "attendance" && !showManualEntry
                   ? "bg-sky-100 text-sky-800"
                   : "text-sky-600 hover:bg-sky-50"
               }`}>
-              <CalendarClock size={20} />
               <span>Attendance Management</span>
             </button>
 
             <button
-              onClick={() => handleTabChange("history")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
+              onClick={() => {
+                setActiveView("attendance");
+                setShowManualEntry(true);
+              }}
+              className={`w-full flex items-center px-4 py-3 rounded-lg transition-all duration-300 ${
+                showManualEntry
+                  ? "bg-sky-100 text-sky-800"
+                  : "text-sky-600 hover:bg-sky-50"
+              }`}>
+              <span>Manual Entry</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveView("history");
+                setShowManualEntry(false);
+              }}
+              className={`w-full flex items-center px-4 py-3 rounded-lg transition-all duration-300 ${
                 activeView === "history"
                   ? "bg-sky-100 text-sky-800"
                   : "text-sky-600 hover:bg-sky-50"
               }`}>
-              <History size={20} />
               <span>Attendance History</span>
             </button>
 
@@ -640,24 +764,28 @@ const ManagerDashboard = () => {
             </div>
 
             <button
-              onClick={() => handleTabChange("profile")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
+              onClick={() => {
+                setActiveView("profile");
+                setShowManualEntry(false);
+              }}
+              className={`w-full flex items-center px-4 py-3 rounded-lg transition-all duration-300 ${
                 activeView === "profile"
                   ? "bg-sky-100 text-sky-800"
                   : "text-sky-600 hover:bg-sky-50"
               }`}>
-              <User size={20} />
               <span>View Profile</span>
             </button>
 
             <button
-              onClick={() => handleTabChange("editProfile")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
+              onClick={() => {
+                setActiveView("editProfile");
+                setShowManualEntry(false);
+              }}
+              className={`w-full flex items-center px-4 py-3 rounded-lg transition-all duration-300 ${
                 activeView === "editProfile"
                   ? "bg-sky-100 text-sky-800"
                   : "text-sky-600 hover:bg-sky-50"
               }`}>
-              <Settings size={20} />
               <span>Edit Profile</span>
             </button>
           </nav>
@@ -665,8 +793,7 @@ const ManagerDashboard = () => {
           <div className="absolute bottom-4 left-4 right-4">
             <button
               onClick={handleLogout}
-              className="w-50 flex items-center gap-3 px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-all duration-300">
-              <LogOut size={20} />
+              className="w-50 flex items-center px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-all duration-300">
               <span>Logout</span>
             </button>
           </div>
@@ -744,210 +871,261 @@ const ManagerDashboard = () => {
             {activeView === "attendance" && (
               <div>
                 <h2 className="text-2xl font-bold text-sky-800 mb-6">
-                  Attendance Management
+                  {showManualEntry ? "Manual Attendance Entry" : "Attendance Management"}
                 </h2>
                 <div className="grid grid-cols-1 gap-6">
-                  {/* PIN Code Attendance Section - Only show if it's the primary method */}
-                  {shouldShowPinCode() && (
+                  {showManualEntry ? (
                     <div className="bg-white p-6 rounded-xl shadow-md">
-                      <h3 className="text-lg font-semibold text-sky-800 mb-4">
-                        PIN Code Attendance
-                      </h3>
-                      <form
-                        onSubmit={handlePinAttendance}
-                        className="space-y-4">
-                        <div>
-                          <label
-                            htmlFor="employeeId"
-                            className="block text-sm font-medium text-sky-700 mb-1">
-                            Employee ID
-                          </label>
-                          <input
-                            type="text"
-                            id="employeeId"
-                            value={pinAttendance.employeeId}
-                            onChange={(e) =>
-                              setPinAttendance((prev) => ({
-                                ...prev,
-                                employeeId: e.target.value,
-                              }))
-                            }
-                            className="w-full px-4 py-2 border border-sky-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
-                            placeholder="Enter Employee ID"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor="pinCode"
-                            className="block text-sm font-medium text-sky-700 mb-1">
-                            PIN Code
-                          </label>
-                          <input
-                            type="password"
-                            id="pinCode"
-                            value={pinAttendance.pinCode}
-                            onChange={(e) =>
-                              setPinAttendance((prev) => ({
-                                ...prev,
-                                pinCode: e.target.value,
-                              }))
-                            }
-                            className="w-full px-4 py-2 border border-sky-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
-                            placeholder="Enter PIN Code"
-                          />
-                        </div>
-                        <button
-                          type="submit"
-                          className="w-full px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
-                          Record Attendance
-                        </button>
-                      </form>
-                      {pinError && (
-                        <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg">
-                          {pinError}
-                        </div>
-                      )}
-                      {pinSuccess && (
-                        <div className="mt-4 p-3 bg-green-100 text-green-700 rounded-lg">
-                          {pinSuccess}
-                        </div>
-                      )}
+                      <PointageManuel onAttendanceRecorded={reloadAttendanceRecords} />
                     </div>
-                  )}
+                  ) : (
+                    <>
+                      {/* PIN Code Attendance Section */}
+                      {shouldShowPinCode() && (
+                        <div className="bg-white p-6 rounded-xl shadow-md">
+                          <h3 className="text-lg font-semibold text-sky-800 mb-4">
+                            PIN Code Attendance
+                          </h3>
+                          <form
+                            onSubmit={handlePinAttendance}
+                            className="space-y-4">
+                            <div>
+                              <label
+                                htmlFor="employeeId"
+                                className="block text-sm font-medium text-sky-700 mb-1">
+                                Employee ID
+                              </label>
+                              <input
+                                type="text"
+                                id="employeeId"
+                                value={pinAttendance.employeeId}
+                                onChange={(e) =>
+                                  setPinAttendance((prev) => ({
+                                    ...prev,
+                                    employeeId: e.target.value,
+                                  }))
+                                }
+                                className="w-full px-4 py-2 border border-sky-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                placeholder="Enter Employee ID"
+                              />
+                            </div>
+                            <div>
+                              <label
+                                htmlFor="pinCode"
+                                className="block text-sm font-medium text-sky-700 mb-1">
+                                PIN Code
+                              </label>
+                              <input
+                                type="password"
+                                id="pinCode"
+                                value={pinAttendance.pinCode}
+                                onChange={(e) =>
+                                  setPinAttendance((prev) => ({
+                                    ...prev,
+                                    pinCode: e.target.value,
+                                  }))
+                                }
+                                className="w-full px-4 py-2 border border-sky-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                placeholder="Enter PIN Code"
+                              />
+                            </div>
+                            <button
+                              type="submit"
+                              className="w-full px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
+                              Record Attendance
+                            </button>
+                          </form>
+                          {pinError && (
+                            <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg">
+                              {pinError}
+                            </div>
+                          )}
+                          {pinSuccess && (
+                            <div className="mt-4 p-3 bg-green-100 text-green-700 rounded-lg">
+                              {pinSuccess}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
-                  {/* Show only the highest priority method */}
-                  {getActiveMethod() === "facialRecognition" && (
-                    <div className="bg-white p-6 rounded-xl shadow-md">
-                      <h3 className="text-lg font-semibold text-sky-800 mb-4">
-                        Facial Recognition
-                      </h3>
-                      <div className="space-y-4">
-                        <div className="relative">
-                          <video
-                            ref={videoRef}
-                            className="w-full rounded-lg border border-sky-200"
-                            autoPlay
-                            playsInline
-                            style={{ transform: "scaleX(-1)" }}
-                          />
-                          <canvas
-                            ref={canvasRef}
-                            className="absolute top-0 left-0 w-full h-full"
-                            style={{ transform: "scaleX(-1)" }}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <input
-                            type="text"
-                            value={employeeId}
-                            onChange={handleEmployeeIdChange}
-                            placeholder="Enter Employee ID"
-                            className="w-full px-4 py-2 border border-sky-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
-                          />
-                          <button
-                            onClick={() => setIsCameraActive(!isCameraActive)}
-                            className="w-full px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
-                            {isCameraActive ? "Stop Camera" : "Start Camera"}
-                          </button>
-                          <button
-                            onClick={handleDetectFaces}
-                            disabled={!isCameraActive}
-                            className="w-full px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                            Detect Faces
-                          </button>
-                        </div>
-                        {verificationStatus && (
-                          <div
-                            className={`p-4 rounded-lg border ${getVerificationStatusClass()}`}>
-                            {verificationMessage}
+                      {/* Facial Recognition Section */}
+                      {getActiveMethod() === "facialRecognition" && (
+                        <div className="bg-white p-6 rounded-xl shadow-md">
+                          <h3 className="text-lg font-semibold text-sky-800 mb-4">
+                            Facial Recognition
+                          </h3>
+                          <div className="space-y-4">
+                            <div className="relative">
+                              <video
+                                ref={videoRef}
+                                autoPlay
+                                muted
+                                className="w-full h-64 bg-sky-100 rounded-lg mb-4"
+                              />
+                              <canvas
+                                ref={canvasRef}
+                                className="absolute top-0 left-0 w-full h-64"
+                              />
+                              {!isCameraActive && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-sky-100 bg-opacity-75 rounded-lg">
+                                  <p className="text-sky-600 font-medium">Camera is inactive</p>
+                                </div>
+                              )}
+                            </div>
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                value={employeeId}
+                                onChange={handleEmployeeIdChange}
+                                placeholder="Enter Employee ID"
+                                className="w-full px-4 py-2 border border-sky-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
+                              />
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    if (isCameraActive) {
+                                      stopVideo();
+                                    } else {
+                                      startVideo();
+                                    }
+                                  }}
+                                  className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+                                    isCameraActive 
+                                      ? "bg-red-600 hover:bg-red-700 text-white" 
+                                      : "bg-sky-600 hover:bg-sky-700 text-white"
+                                  }`}>
+                                  {isCameraActive ? "Stop Camera" : "Start Camera"}
+                                </button>
+                                <button
+                                  onClick={handleDetectFaces}
+                                  disabled={!isCameraActive || isDetecting}
+                                  className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                                    !isCameraActive
+                                      ? "bg-gray-400 cursor-not-allowed"
+                                      : isDetecting
+                                      ? "bg-sky-500"
+                                      : "bg-sky-600 hover:bg-sky-700"
+                                  } text-white`}>
+                                  {isDetecting ? (
+                                    <>
+                                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                      </svg>
+                                      Detecting...
+                                    </>
+                                  ) : (
+                                    "Detect Face"
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                            {verificationStatus && (
+                              <div className={`p-4 rounded-lg border ${getVerificationStatusClass()}`}>
+                                {verificationMessage}
+                              </div>
+                            )}
+                            {detections.length > 0 && (
+                              <div className="bg-sky-100 text-sky-800 px-3 py-2 rounded-lg flex items-center">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-5 w-5 mr-1"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor">
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
+                                {detections.length === 1
+                                  ? "Face detected successfully!"
+                                  : `${detections.length} faces detected`}
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
+                      )}
+
+                      {/* QR Code Section */}
+                      {getActiveMethod() === "qrCode" && (
+                        <div className="bg-white p-6 rounded-xl shadow-md">
+                          <h3 className="text-lg font-semibold text-sky-800 mb-4">
+                            QR Code Scanner
+                          </h3>
+                          <QrCodeGenerator onScan={handleQrCodeScan} />
+                        </div>
+                      )}
+
+                      {/* Attendance Records - Only show when not in manual entry mode */}
+                      <div className="bg-white p-6 rounded-xl shadow-md">
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-lg font-semibold text-cyan-800">
+                            Today's Records
+                          </h3>
+                          <button
+                            onClick={handleSendReport}
+                            disabled={isSendingReport}
+                            className={`px-4 py-2 bg-cyan-600 text-white rounded-lg transition-colors ${
+                              isSendingReport
+                                ? "opacity-50 cursor-not-allowed"
+                                : "hover:bg-cyan-700"
+                            }`}>
+                            {isSendingReport ? "Sending..." : "Send Report to Chef"}
+                          </button>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="border-b border-cyan-200">
+                                <th className="text-center p-2 text-cyan-800">
+                                  Employee ID
+                                </th>
+                                <th className="text-center p-2 text-cyan-800">
+                                  Name
+                                </th>
+                                <th className="text-center p-2 text-cyan-800">
+                                  Time
+                                </th>
+                                <th className="text-center p-2 text-cyan-800">
+                                  Status
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {attendanceRecords.map((record, index) => (
+                                <tr
+                                  key={index}
+                                  className="border-b border-cyan-100 hover:bg-cyan-50">
+                                  <td className="p-2 text-cyan-700 text-center">
+                                    {record.employeeId}
+                                  </td>
+                                  <td className="p-2 text-cyan-700 text-center">
+                                    {record.employeeName}
+                                  </td>
+                                  <td className="p-2 text-cyan-700 text-center">
+                                    {new Date(record.timestamp).toLocaleTimeString()}
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <span
+                                      className={`px-2 py-1 rounded text-sm ${
+                                        record.status === "PRESENT"
+                                          ? "bg-cyan-100 text-cyan-800"
+                                          : "bg-red-100 text-red-800"
+                                      }`}>
+                                      {record.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
-                    </div>
+                    </>
                   )}
-
-                  {getActiveMethod() === "qrCode" && (
-                    <div className="bg-white p-6 rounded-xl shadow-md">
-                      <h3 className="text-lg font-semibold text-sky-800 mb-4">
-                        QR Code Scanner
-                      </h3>
-                      <QrCodeGenerator />
-                    </div>
-                  )}
-
-                  {/* Manual Entry Section - Always visible */}
-                  <div className="bg-white p-6 rounded-xl shadow-md">
-                    <h3 className="text-lg font-semibold text-sky-800 mb-4">
-                      Manual Entry
-                    </h3>
-                    <PointageManuel />
-                  </div>
-                </div>
-
-                {/* Attendance Records */}
-                <div className="mt-6 bg-white p-6 rounded-xl shadow-md">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-cyan-800">
-                      Today's Records
-                    </h3>
-                    <button
-                      onClick={handleSendReport}
-                      disabled={isSendingReport}
-                      className={`px-4 py-2 bg-cyan-600 text-white rounded-lg transition-colors ${
-                        isSendingReport
-                          ? "opacity-50 cursor-not-allowed"
-                          : "hover:bg-cyan-700"
-                      }`}>
-                      {isSendingReport ? "Sending..." : "Send Report to Chef"}
-                    </button>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-cyan-200">
-                          <th className="text-center p-2 text-cyan-800">
-                            Employee ID
-                          </th>
-                          <th className="text-center p-2 text-cyan-800">
-                            Name
-                          </th>
-                          <th className="text-center p-2 text-cyan-800">
-                            Time
-                          </th>
-                          <th className="text-center p-2 text-cyan-800">
-                            Status
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {attendanceRecords.map((record, index) => (
-                          <tr
-                            key={index}
-                            className="border-b border-cyan-100 hover:bg-cyan-50">
-                            <td className="p-2 text-cyan-700 text-center">
-                              {record.employeeId}
-                            </td>
-                            <td className="p-2 text-cyan-700 text-center">
-                              {record.employeeName}
-                            </td>
-                            <td className="p-2 text-cyan-700 text-center">
-                              {new Date(record.timestamp).toLocaleTimeString()}
-                            </td>
-                            <td className="p-2 text-center">
-                              <span
-                                className={`px-2 py-1 rounded text-sm ${
-                                  record.status === "PRESENT"
-                                    ? "bg-cyan-100 text-cyan-800"
-                                    : "bg-red-100 text-red-800"
-                                }`}>
-                                {record.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
                 </div>
               </div>
             )}

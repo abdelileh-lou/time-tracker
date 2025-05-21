@@ -45,6 +45,10 @@ const Admin = () => {
   });
   const [facialData, setFacialData] = useState(null);
 
+  // Add new state for camera status
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
+
   // Constants
   const employeeRoles = [
     { id: "employee", label: "Employee" },
@@ -215,21 +219,41 @@ const Admin = () => {
             height: videoRef.current.videoHeight,
           });
           videoRef.current.play();
+          setIsCameraActive(true);
         };
       }
     } catch (err) {
       console.error("Error accessing webcam:", err);
+      enqueueSnackbar("Error accessing camera. Please check permissions.", {
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     }
   };
 
   const stopVideo = () => {
     if (videoRef.current?.srcObject) {
       videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+      setIsCameraActive(false);
     }
   };
 
   const handleDetectFaces = async () => {
-    setLoading(true);
+    if (!isCameraActive) {
+      enqueueSnackbar("Please activate the camera first", {
+        variant: 'warning',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
+      return;
+    }
+
+    setIsDetecting(true);
     try {
       const faces = await detectFaces(videoRef.current);
       setDetections(faces);
@@ -245,11 +269,33 @@ const Admin = () => {
           box: detection.detection.box,
         }));
         setFacialData(faceData);
+        enqueueSnackbar("Face detected successfully!", {
+          variant: 'success',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
+      } else {
+        enqueueSnackbar("No face detected. Please try again.", {
+          variant: 'warning',
+          anchorOrigin: {
+            vertical: 'top',
+            horizontal: 'right',
+          },
+        });
       }
     } catch (error) {
       console.error("Detection error:", error);
+      enqueueSnackbar("Error detecting face. Please try again.", {
+        variant: 'error',
+        anchorOrigin: {
+          vertical: 'top',
+          horizontal: 'right',
+        },
+      });
     } finally {
-      setLoading(false);
+      setIsDetecting(false);
     }
   };
 
@@ -586,13 +632,20 @@ const Admin = () => {
                           </h4>
                           <button
                             type="button"
-                            onClick={() =>
-                              setShowFacialRecognition(!showFacialRecognition)
-                            }
-                            className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors">
-                            {showFacialRecognition
-                              ? "Hide"
-                              : "Add Facial Recognition"}
+                            onClick={() => {
+                              if (showFacialRecognition) {
+                                stopVideo();
+                              } else {
+                                startVideo();
+                              }
+                              setShowFacialRecognition(!showFacialRecognition);
+                            }}
+                            className={`px-4 py-2 rounded-lg transition-colors ${
+                              showFacialRecognition
+                                ? "bg-red-600 hover:bg-red-700 text-white"
+                                : "bg-sky-600 hover:bg-sky-700 text-white"
+                            }`}>
+                            {showFacialRecognition ? "Stop Camera" : "Start Camera"}
                           </button>
                         </div>
 
@@ -613,15 +666,36 @@ const Admin = () => {
                                 height={videoDimensions.height}
                                 className="absolute top-0 left-0 w-full h-64"
                               />
+                              {!isCameraActive && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-sky-100 bg-opacity-75 rounded-lg">
+                                  <p className="text-sky-600 font-medium">Camera is inactive</p>
+                                </div>
+                              )}
                             </div>
 
                             <div className="flex space-x-3 mt-3">
                               <button
                                 type="button"
                                 onClick={handleDetectFaces}
-                                className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors"
-                                disabled={loading}>
-                                {loading ? "Detecting..." : "Detect Face"}
+                                disabled={!isCameraActive || isDetecting}
+                                className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                                  !isCameraActive
+                                    ? "bg-gray-400 cursor-not-allowed"
+                                    : isDetecting
+                                    ? "bg-sky-500"
+                                    : "bg-sky-600 hover:bg-sky-700"
+                                } text-white`}>
+                                {isDetecting ? (
+                                  <>
+                                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Detecting...
+                                  </>
+                                ) : (
+                                  "Detect Face"
+                                )}
                               </button>
 
                               {detections.length > 0 && (
@@ -678,9 +752,6 @@ const Admin = () => {
                               Role
                             </th>
                             <th className="px-4 py-2 text-left text-sky-800">
-                              Service
-                            </th>
-                            <th className="px-4 py-2 text-left text-sky-800">
                               Facial
                             </th>
                             <th className="px-4 py-2 text-left text-sky-800">
@@ -696,7 +767,6 @@ const Admin = () => {
                               <td className="px-4 py-2">{employee.name}</td>
                               <td className="px-4 py-2">{employee.email}</td>
                               <td className="px-4 py-2">{employee.role}</td>
-                              <td className="px-4 py-2">{employee.service}</td>
                               <td className="px-4 py-2 text-center">
                                 {employee.facialData ? (
                                   <span className="text-sky-600">✓</span>
